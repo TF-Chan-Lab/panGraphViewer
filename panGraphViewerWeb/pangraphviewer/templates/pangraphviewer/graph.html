@@ -1,0 +1,404 @@
+{% extends "pangraphviewer/base4.html" %}
+
+{% block content %}
+
+{% load static %}
+
+<!--
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+-->
+<script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+
+<style>
+    .cy {
+        position: absolute;
+        left: 100;
+        //top: 150;
+        top: 170;
+        bottom: 100;
+        right: 300;
+        z-index: 999;
+        width: 85vw;
+        height: 75vh;
+    }
+    #loading {
+        position: absolute;
+        display: block;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        text-align: center;
+        margin-top: -0.5em;
+        font-size: 2em;
+        color: #000;
+    }
+    figcaption {
+        font-size: 3ex;
+        text-align: center;
+    }
+
+    .tab-pane2 {
+        border-left: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        border-radius: 0px 0px 5px 5px;
+        padding: 10px;
+
+        border-top: 1px solid #ddd;
+    }
+
+    .nav-tabs {
+        margin-bottom: 0;
+    }
+</style>
+
+<div id="loading" style="display:none"><img id="loading-image" src="/static/images/loader.gif" alt="Loading..." width="150" height="150" /></div>
+
+<link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.css">
+<script src="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.js"></script>
+
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script src="/static/pangraphviewer/js/cytoscape-euler.js"></script>
+<script src="/static/pangraphviewer/js/cytoscape-qtip.js"></script>
+
+<script src="/static/pangraphviewer/js/cytoscape-context-menus.js"></script>
+<link rel="stylesheet" type="text/css" href="/static/pangraphviewer/css/cytoscape-context-menus.css">
+
+<script src={% static 'pangraphviewer/js/graph.js' %} defer></script>
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="input-tab" data-toggle="tab" href="#input" role="tab" aria-controls="home" aria-selected="true">Input</a>
+  </li>
+</ul>
+
+<input type="hidden" id="get_uploaded_list_url" value="{% url 'get_uploaded_list' %}">
+<input type="hidden" id="upload_file_url" value="{% url 'upload_file' %}">
+<input type="hidden" id="manage_file_url" value="{% url 'manage_file' %}">
+<input type="hidden" id="check_node_id_url" value="{% url 'check_node_id' %}">
+
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade show active" id="input" role="tabpanel" aria-labelledby="input-tab">
+    <div id="alert-box"></div>
+    <br>
+    <form id="input-form" method="get" action="{% url 'graph' %}">
+      {% csrf_token %}
+      <input type="hidden" id="parse_gfa_url" value="{% url 'parse_gfa' %}">
+      <input type="hidden" id="parse_vcf_url" value="{% url 'parse_vcf' %}">
+      <input type="hidden" id="parse_bed_url" value="{% url 'parse_bed' %}">
+      <input type="hidden" id="getdata_url" value="{% url 'getdata' %}">
+      <input type="hidden" id="input_type" value="rgfa">
+
+    <ul class="nav nav-pills">
+      <li class="nav-item">
+        <a class="nav-link active" id="rgfa_tab" data-toggle="pill" href="#rgfa">rGFA</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="vcf_tab" data-toggle="pill" href="#vcf">VCF</a>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane tab-pane2 container active" id="rgfa">
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Uploaded rGFA file (*)</label>
+          <div class="col-sm-10">
+            <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='gfa_path' placeholder="rGFA" onchange="control_plot_input('reset')">
+                  <option value=''>Select uploaded rGFA</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('gfa_path','gfa')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('gfa_path','gfa')">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('gfa_path','gfa')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="gfa_upload_icon" onclick="$('#gfa_upload').trigger('click')"></i>
+                  <input type="file" name="gfa_upload" id="gfa_upload" accept=".gfa,.rgfa" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+              </div>
+              <div class="col-sm-2">
+                <button type=button id="parse-btn" class="btn btn-primary btn-block">Parse GFA</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane tab-pane2 container fade" id="vcf">
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Backbone name (*)</label>
+          <div class="col-sm-10">
+            <div class="form-row">
+              <div class="col-sm-4">
+                <input class="form-control" id="vcf_backbone" name="vcf_backbone" placeholder="Enter backbone name">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Uploaded VCF file (*)</label>
+          <div class="col-sm-10">
+            <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='vcf_path' placeholder="vcf" onchange="control_plot_input('reset')">
+                  <option value=''>Select uploaded VCF</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('vcf_path','vcf')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('vcf_path','vcf')">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('vcf_path','vcf')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="vcf_upload_icon" onclick="$('#vcf_upload').trigger('click')"></i>
+                  <input type="file" name="vcf_upload" id="vcf_upload" accept=".vcf" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+              </div>
+
+              <div class="col-sm-2">
+                <button id="parse-vcf-btn" class="btn btn-primary btn-block">Parse VCF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Uploaded fasta file</label>
+          <div class="col-sm-10">
+            <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='fasta_path' placeholder="fasta">
+                  <option value=''>Select uploaded fasta</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('fasta_path','fasta')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('fasta_path','fasta')"">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('fasta_path','fasta')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="fasta_upload_icon" onclick="$('#fasta_upload').trigger('click')"></i>
+                  <input type="file" name="fasta_upload" id="fasta_upload" accept=".fa,.fasta,.fna" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+              </div>
+
+              <div class="col-sm-2">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <br>
+    <ul class="nav nav-pills" id="tab-action">
+      <li class="nav-item">
+        <a class="nav-link disabled" id="plot_tab" data-toggle="pill" href="#plot">Plot pangenome</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled" id="extract_node_tab" data-toggle="pill" href="#extract_node">Extract nodes</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled" id="overlap_gene_tab" data-toggle="pill" href="#overlap_gene">Plot overlap genes</a>
+      </li>
+    </ul>
+
+<div class="tab-content" id="tab-content-action">
+  <div class="tab-pane tab-pane2 container active" id="plot">
+    <div class="form-group row">
+      <label class="col-sm-2 col-form-label">Plot parameters (*)</label>
+      <div class="col-sm-10">
+        <div class="form-row">
+          <div class="col">
+            <select class="form-control" id='backbone' placeholder="backbone" required=True disabled>
+              <option value=''>Select backbone</option>
+            </select>
+          </div>
+          <div class="col">
+            <select class="form-control" id='chr' placeholder="chr" required=True disabled>
+              <option value=''>Select chr</option>
+            </select>
+          </div>
+          <div class="col">
+            <input class="form-control" id="start" name="start" value="{{start}}" placeholder="Enter start (optional)" disabled>
+          </div>
+          <div class="col">
+            <input class="form-control" id="end" name="end" value="{{end}}" placeholder="Enter end (optional)" disabled>
+          </div>
+          <div class="col-sm-2">
+            <button type="submit" class="btn btn-primary btn-block" id="plot-btn" disabled>Plot</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane tab-pane2 container disabled" id="extract_node">
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Input node IDs<br>(separated by ',')</label>
+          <div class="col-sm-10">
+            <div class="form-row">
+              <div class="col-sm-3">
+                <div class="form-group">
+                  <textarea class="form-control" id="extract_node_node_id" rows="3" placeholder="Input node IDs"></textarea>
+                </div>
+              </div>
+              <div class="col-sm-1">
+                <button type="button" id="extract_node_check_btn" class="btn btn-default" aria-label="Left Align">
+                  <i class="fas fa-spell-check" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="col-sm-3">
+                <div class="form-group">
+                  <textarea class="form-control" id="extract_node_checked_node_id" rows="3" placeholder="Checked node IDs" readonly></textarea>
+                </div>
+              </div>
+              <div class="col-sm-1">
+              </div>
+              <div class="col-sm-2">
+                <button type=button id="extract_node_view_btn" class="btn btn-primary btn-block">View</button>
+              </div>
+              <div class="col-sm-2">
+                <!--
+                <button type="button" id="extract_node_download_btn" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                -->
+                <button type=button id="extract_node_download_btn" class="btn btn-primary btn-block">Download</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+  </div>
+  <div class="tab-pane tab-pane2 container" id="overlap_gene">
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Uploaded bed file (*)</label>
+          <div class="col-sm-10">
+
+            <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='bed_path' placeholder="bed" onchange="bed_path_onchange()">
+                  <option value=''>Select uploaded bed</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('bed_path','bed')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('bed_path','bed')">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('bed_path','bed')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="bed_upload_icon" onclick="$('#bed_upload').trigger('click')"></i>
+                  <input type="file" name="bed_upload" id="bed_upload" accept=".bed" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+              </div>
+              <div class="col-sm-2">
+                <!--
+                <button type="button" id="parse-bed-btn" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-search" aria-hidden="true"></i>
+                </button>
+                -->
+                <button type=button id="parse-bed-btn" class="btn btn-primary btn-block">Find overlap gene</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+    <div class="form-group row">
+      <label class="col-sm-2 col-form-label">Overlap genes (*)</label>
+      <div class="col-sm-10">
+        <div class="form-row">
+          <div class="col-sm-6">
+            <select class="form-control" id='gene' placeholder="gene" onchange="gene_onchange()">
+              <option value=''>Select gene</option>
+            </select>
+          </div>
+          <div class="col">
+          </div>
+          <div class="col-sm-2">
+            <button type=button class="btn btn-primary btn-block" id="plot-gene-btn">Plot</button>
+            <!--
+            <button type="button" id="plot-gene-btn" class="btn btn-default" aria-label="Left Align">
+              <i class="fa fa-image" aria-hidden="true"></i>
+            </button>
+            -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </form>
+
+  </div>
+</div>
+
+    <br><br>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm">
+          <figure>
+            <img src="/static/images/frontpage.jpg" alt="cover" width="100%">
+          </figure>
+        </div>
+        <div class="col-sm-3">
+          <h1>
+            PanGraphViewer is a tool helping to create a graph-based pangenome 
+            using a given VCF file with or without a FASTA file. It can also accept a reference 
+            graphical fragment assembly (rGFA) file from other software, such as minigraph. 
+            PanGraphViewer shows genome graph in a graphical user interface (GUI) or a webpage.
+          </h1>
+
+          <h1>
+            During graph display, users can customise the layout of a graph. 
+            Users can also check genes overlapping with specific genomic regions (nodes). 
+            Multiple nodes selection enable users to browse the selected nodes only or 
+            the rest nodes only.
+          </h1>
+
+          <h1>
+            PanGraphViewer also provides functions to check the sequence of selected
+            nodes and enable users to save/download the corresponding sequences when 
+            right click the mouse.
+          </h1>
+
+          <h1>
+            PanGraphViewer provides an easy way to display a pangenome graph from rGFA or VCF files.
+          </h1>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="footer" role="contentinfo" style="text-align:center">
+      © 2021 The TF Chan Lab, the Chinese University of Hong Kong - All Rights Reserved
+    </div>
+    <br><br>
+
+  </div>
+</div>
+
+{% endblock content %}

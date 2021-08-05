@@ -1,0 +1,67 @@
+{% extends "pangraphviewer/base4.html" %}
+
+{% block content %}
+
+{% load static %}
+
+<script src=/static/pangraphviewer/js/config.js defer></script>
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="input-tab" data-toggle="tab" href="#input" role="tab" aria-controls="home" aria-selected="true">Working env</a>
+  </li>
+<!--
+  <li class="nav-item">
+    <a class="nav-link" id="graph-tab" data-toggle="tab" href="#graph" role="tab" aria-controls="graph" aria-selected="true">Graph config</a>
+  </li>
+-->
+</ul>
+
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade show active" id="input" role="tabpanel" aria-labelledby="input-tab">
+    <div id="alert-box"></div>
+    <br>
+    <form id="input-form" method="post">
+      {% csrf_token %}
+
+      <div class="form-group row">
+        <label class="col-sm-3 col-form-label">Server working base directory</label>
+        <div class="col-sm-9">
+          <div class="form-row">
+            <div class="col-sm-5">
+              <input type="text" value="{{work_base_dir}}" class="form-control" name="work_base_dir" autofocus autocapitalize="none" autocomplete="work_base_dir" maxlength="150" required id="work_base_dir">
+            </div>
+            <div class="col">
+              <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="tab-pane fade show active" id="graph" role="tabpanel" aria-labelledby="graph-tab">
+    <div id="alert-box"></div>
+    <br>
+    <form id="graph-form" method="post">
+      {% csrf_token %}
+
+      <div class="form-group row">
+<!--
+        <label class="col-sm-3 col-form-label">Server working base directory</label>
+        <div class="col-sm-9">
+          <div class="form-row">
+            <div class="col-sm-5">
+              <input type="text" value="{{work_base_dir}}" class="form-control" name="work_base_dir" autofocus autocapitalize="none" autocomplete="work_base_dir" maxlength="150" required id="work_base_dir">
+            </div>
+            <div class="col">
+              <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+          </div>
+        </div>
+-->
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock content %}

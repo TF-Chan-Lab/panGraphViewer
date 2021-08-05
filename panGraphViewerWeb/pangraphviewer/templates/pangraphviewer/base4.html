@@ -1,0 +1,28 @@
+<head>
+{% load static %}
+  <title>panGraph</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
+
+<link href="{% static "pangraphviewer/css/style.css" %}" rel="stylesheet" />
+<link rel="stylesheet" href={% static 'pangraphviewer/css/upload.css' %}>
+
+</head>
+<body>
+    <div class="container mt-3" id='page_content'>
+        {% include 'pangraphviewer/navbar4.html' %}
+        <br>
+        {% block content %}
+        {% endblock content %}
+    </div>
+</body>

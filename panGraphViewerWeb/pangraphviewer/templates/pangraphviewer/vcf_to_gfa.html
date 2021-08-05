@@ -1,0 +1,142 @@
+{% extends "pangraphviewer/base4.html" %}
+
+{% block content %}
+
+{% load static %}
+
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+<script src={% static 'pangraphviewer/js/vcf_to_gfa.js' %} defer></script>
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="convert_vcf_tab" data-toggle="tab" href="#input" role="tab" aria-controls="home" aria-selected="true">Convert VCF to rGFA</a>
+  </li>
+</ul>
+
+<input type="hidden" id="get_uploaded_list_url" value="{% url 'get_uploaded_list' %}">
+<input type="hidden" id="upload_file_url" value="{% url 'upload_file' %}">
+<input type="hidden" id="convert_vcf_url" value="{% url 'convert_vcf' %}">
+<input type="hidden" id="manage_file_url" value="{% url 'manage_file' %}">
+
+<div class="tab-content" id="myTab-content">
+  <div class="tab-pane fade show active" id="input" role="tabpanel" aria-labelledby="convert_vcf_tab">
+    <div id="alert-box"></div>
+    <br>
+
+    <form id="input-form" method="get" action="{% url 'convert_vcf' %}">
+      {% csrf_token %}
+
+      <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Backbone name (*)</label>
+        <div class="col-sm-10">
+          <div class="form-row">
+            <div class="col">
+              <input class="form-control" id="backbone" name="backbone">
+            </div>
+
+            <div class="col">
+            </div>
+
+            <div class="col">
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Uploaded VCF file (*)</label>
+        <div class="col-sm-10">
+          <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='vcf_path' placeholder="vcf">
+                  <option value=''>Select uploaded VCF</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('vcf_path','vcf')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('vcf_path','vcf')">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('vcf_path','vcf')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="vcf_upload_icon"></i>
+                  <input type="file" name="vcf_upload" id="vcf_upload" accept=".vcf" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+
+              </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Uploaded Fasta file (*)</label>
+        <div class="col-sm-10">
+          <div class="form-row">
+              <div class="col-sm-4">
+                <select class="form-control" id='fasta_path' placeholder="fasta">
+                  <option value=''>Select uploaded fasta</option>
+                </select>
+              </div>
+              <div class="col">
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('fasta_path','fasta')">
+                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('fasta_path','fasta')">
+                  <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('fasta_path','fasta')">
+                  <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn btn-default" aria-label="Left Align">
+                  <i class="fa fa-upload" aria-hidden="true" id="fasta_upload_icon"></i>
+                  <input type="file" name="fasta_upload" id="fasta_upload" accept=".fa,.fasta,.fna" style="height:1px;width:1px;visibility:hidden;">
+                </button>
+
+              </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label class="col-sm-2 col-form-label">Converted rGFA</label>
+        <div class="col-sm-10">
+          <div class="form-row">
+            <div class="col">
+              <input class="form-control" id="rgfa_path" name="rgfa_path" value="{{rgfa}}" readonly>
+            </div>
+
+            <div class="col">
+              <button id="convert-btn" class="btn btn-primary btn-block">Convert to rGFA</button>
+            </div>
+
+            <div class="col">
+              <button id="download-btn" class="btn btn-primary btn-block" disabled>Download rGFA</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<script>
+$('#vcf_upload_icon').click(function () {
+  $('#vcf_upload').trigger('click');
+});
+$('#fasta_upload_icon').click(function () {
+  $('#fasta_upload').trigger('click');
+});
+</script
+
+{% endblock content %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Log In{% endblock %}
+
+{% block content %}
+<div id="header">
+  <div id="branding">
+    <h1 id="site-name"><a href="/">panGraph Login</a></h1>
+  </div>
+</div>
+
+<div class="main shifted" id="main">
+  <div class="content">
+    <!-- Content -->
+    <div id="content" class="colM">
+      <div id="content-main">
+        <form method="post">
+          <div class="form-row">
+            (username: demo, password: demodemo)
+            {% csrf_token %}
+            {{ form.as_p }}
+          </div>
+          <div class="submit-row">
+            <input type="submit" value="Log In">
+          </div>
+          <br>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

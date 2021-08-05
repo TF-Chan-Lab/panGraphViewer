@@ -1,0 +1,202 @@
+<!DOCTYPE>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.css">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
+    <script src="cytoscape-context-menus.js"></script>
+    <link rel="stylesheet" type="text/css" href="cytoscape-context-menus.css">
+
+    <script src="cytoscape-euler.js"></script>
+    <script src="cytoscape-qtip.js"></script>
+
+    <style>
+        body {
+            font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+            font-size: 14px;
+        }
+
+        #cy {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            z-index: 999;
+        }
+
+        h1 {
+            color: #000000;
+            opacity: 1;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+    </style>
+    <style>
+        #loading {
+            position: absolute;
+            display: block;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            margin-top: -0.5em;
+            font-size: 2em;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <center><h1>{%title%}</h1></center>
+    <div id="cy"></div>
+    <div id="loading"><img id="loading-image" src="loader.gif" alt="Loading..." width="150" height="150" /></div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        setTimeout(function(){ genGraph(); }, 1000);
+    });
+
+    function genGraph() {
+        var cy = window.cy = cytoscape({
+            container: document.getElementById('cy'),
+
+            layout: {
+                name: 'euler',
+                randomize: true,
+                animate: false,
+
+                stop: function() {
+                    $('#loading').hide();
+                },
+            },
+
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'content': 'data(name)',
+                        'background-color': 'data(color)',
+                        'shape': 'data(shape)',
+                        'width': 'data(size)',
+                        'height': 'data(size)',
+                        'border-width': '0.09px',
+                        'border-style': 'solid',
+                        'border-color': '#E5E5E5',
+                        'font-size':'8px'
+                    }
+                },
+
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 0.5,
+                        'opacity': 0.5,
+                        'line-color':'data(color)',
+                        'arrow-scale': 1.1,
+                        'curve-style': 'unbundled-bezier',
+                        'control-point-distance': 7,
+                        'control-point-weight': '0.5',
+                        'target-arrow-shape':'triangle-backcurve',
+                        'target-arrow-color':'data(color)',
+                    }
+                },
+
+                {
+                    selector: ':selected',
+                    style: {
+                        'border-color': 'red',
+                        'border-width': '2px',
+                    }
+                },
+
+                {
+                    selector: 'edge:selected',
+                    style: {
+                        'line-color': 'red',
+                        'target-arrow-color':'red',
+                        'width': '2px',
+                    }
+                },
+            ],
+
+            elements: JSON.parse(`{%data%}`),
+        });
+
+        cy.on('mouseover', 'node', function(event) {
+            this.qtip({
+                content: this.data('title'),
+                position: {
+                    my: 'top center',
+                    at: 'bottom center'
+                },
+                style: {
+                    classes: 'qtip-bootstrap',
+                    tip: {
+                        width: 16,
+                        height: 8
+                    }
+                },
+                show: {
+                    event: event.type,
+                    ready: true
+                },
+                hide: {
+                    event: 'mouseout unfocus'
+                }
+
+            });
+        });
+
+        cy.contextMenus({
+            menuItems: [
+                {
+                    id: 'hide',
+                    content: 'hide selected',
+                    tooltipText: 'hide selected',
+                    selector: '*',
+                    onClickFunction: function (event) {
+                        cy.$(':selected').hide();
+                        curr_node = (event.target || event.cyTarget);
+                        curr_node.hide();
+                    },
+                    disabled: false
+                },
+                {
+                    id: 'show',
+                    content: 'show selected only',
+                    tooltipText: 'show selected only',
+                    selector: '*',
+                    onClickFunction: function (event) {
+                        cy.$(':unselected').hide();
+                        curr_node = (event.target || event.cyTarget);
+                        curr_node.show();
+                    },
+                    disabled: false
+                },
+                {
+                    id: 'unhide',
+                    content: 'unhide all',
+                    tooltipText: 'unhide all',
+                    selector: '*',
+                    onClickFunction: function (event) {
+                        cy.$(':unselected').show();
+                        cy.$(':selected').show();
+                    },
+                    disabled: false
+                },
+            ]
+        });
+
+    }
+</script>
+</html>
