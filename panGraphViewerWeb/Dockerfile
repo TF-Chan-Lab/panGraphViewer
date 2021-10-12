@@ -1,6 +1,6 @@
 FROM python:3.7-slim
 
-RUN apt-get update && apt-get install build-essential -y
+RUN apt-get update && apt-get install build-essential zlib1g-dev libbz2-dev liblzma-dev -y
 
 # set work directory
 WORKDIR /usr/src/app

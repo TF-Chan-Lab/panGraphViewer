@@ -279,7 +279,7 @@ Threads: 2
 
 For the ``desktop-based`` application, it is optimized on ``Windows 10`` and ``macOS Big Sur``. ``Ubuntu 18.04.5`` is also tested. For ``Linux`` operating system version below ``Ubuntu 18.04.5`` or equivalent, such as ``Ubuntu 16.04``, ``PyQtWebEngine`` may not work properly. For other versions of operating systems, the ``desktop-based`` application may still work, however, the **layout** of the application may differ.
 
-For the ``web browser-based`` version, we suggest running in ``Linux`` or ``macOS`` environment. If users want to run on ``Windows`` systems, ``Windows 10`` or above is recommended. Users can also use ``docker`` to run the ``web browser-based`` version. However, ``WSL`` is needed to run the docker version on ``Windows 10`` or above.
+For the ``web browser-based`` version, we suggest running in ``Linux`` or ``macOS`` environment. If users want to run on ``Windows`` systems, ``Windows 10`` or above is recommended. Users can also use ``docker`` to run the ``web browser-based`` version (see the instruction [here](https://github.com/TF-Chan-Lab/panGraphViewer/blob/main/panGraphViewerWeb/README.md)). However, ``WSL`` is needed to run the docker version on ``Windows 10`` or above.
 
 ---
 

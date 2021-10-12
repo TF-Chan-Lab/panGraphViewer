@@ -82,5 +82,21 @@ Account: admin
 password: abcd1234
 ```
 
+Here we have also provied a docker image ``pangraphviewerweb`` on docker hub. You may follow the steps below to run the program.
+
+* pull and run the docker image:
+    ```
+    docker pull rickyma1/pangraphviewerweb
+    docker run -d -P --name pangraph1 rickyma1/pangraphviewerweb > /dev/null
+    ```
+* find the published port:
+    ```
+    docker port pangraph1 8000
+    ```
+3. If the IP address of the machine is 1.2.3.4 (local machine IP address is ``127.0.0.1`` or ``locallhost``), and the published port is 8000, then the url to open the program is:
+    ```
+    http://1.2.3.4:8000
+    ```
+
 ---
 Enjoy the use of panGraphViewer!
