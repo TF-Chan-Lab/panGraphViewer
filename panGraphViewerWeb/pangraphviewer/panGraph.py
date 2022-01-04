@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from types import CodeType
 import networkx as nx
 import sys
 import math
@@ -218,6 +219,8 @@ class PanGraph:
     # load nodes and edges
     def loadRGFA(self, targetChr = None):
         nodes = {}
+        nodes_ref_array = []
+        nodes_nonref_array = []
         edges = []
         firstNodeId, firstLenBefore = {}, {}
 
@@ -231,7 +234,6 @@ class PanGraph:
             try:
                 for lineNum, line in enumerate(f):
                     if line[0] == 'S':
-                        if targetChr and targetChr not in line: continue
 
                         row = line.strip().split('\t')
 
@@ -258,19 +260,24 @@ class PanGraph:
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
                         # update backbone info
-                        if rank == '0':
+                        if rank == '0': # Ref backbone
+                            if targetChr and targetChr not in line: 
+                                continue
                             backbone['contigs'][contig] = 1
                             backbone['name'] = sample
-
+                            nodes_ref_array.append( nodeId )
                             if contig not in firstNodeId or lenBefore < firstLenBefore[contig]:
                                 firstNodeId[contig] = nodeId
                                 firstLenBefore[contig] = lenBefore
+                        else: # not ref
+                            nodes_nonref_array.append( nodeId )
 
                         # update nodes
                         samples[sample] = 1
                         inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
                         nodes[nodeId] = {'nodeId':nodeId,'seqDesc':seqDesc,'seqLastDesc':seqLastDesc,'len':seqLen,
                                          'sample':sample,'chr':contig,'lenBefore':lenBefore,'rank':rank,'inf':inf}
+
                     elif line[0] == 'L':
                         row = line.strip().split('\t')
                         type, fromNodeId, fromStrand, toNodeId, toStrand = row[:5]
@@ -291,6 +298,8 @@ class PanGraph:
 
         self.nodes = nodes
         self.edges = edges
+        self.nodes_ref_array = nodes_ref_array
+        self.nodes_nonref_array = nodes_nonref_array
         self.firstNodeId = firstNodeId
 
         backbone['contigs'] = list(backbone['contigs'].keys())
@@ -506,8 +515,8 @@ class PanGraph:
 
             if fromNodeId not in G.nodes or toNodeId not in G.nodes:
                 continue
-
-            if fromStrand == '-':
+            """
+            if 0 and fromStrand == '-': ########## zzmod ignore strand
                 newNodeId = f'{fromNodeId}.reversed'
                 if newNodeId not in G.nodes:
                     G.add_node(newNodeId, **self.nodes[fromNodeId])
@@ -515,8 +524,7 @@ class PanGraph:
                     #G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[fromNodeId]['seq'])
                     G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[fromNodeId]['seqLastDesc'])
                 fromNodeId = newNodeId
-
-            if toStrand == '-':
+            if 0 and toStrand == '-': ########## zzmod ignore strand
                 newNodeId = f'{toNodeId}.reversed'
                 if newNodeId not in G.nodes:
                     G.add_node(newNodeId, **self.nodes[toNodeId])
@@ -524,9 +532,10 @@ class PanGraph:
                     #G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[toNodeId]['seq'])
                     G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[toNodeId]['seqLastDesc'])
                 toNodeId = newNodeId
-
-            G.add_edge(fromNodeId, toNodeId)
-
+            """
+            G.add_edge(fromNodeId, toNodeId, 
+                        fromRev = fromStrand,
+                        toRev = toStrand)
         self.G = G
 
     def updateNodes(self):
@@ -562,8 +571,7 @@ class PanGraph:
 
         self.G = G
         self.H = self.G.to_undirected()
-
-        #logging.info(f'whole graph: number of nodes: {len(G.nodes)}, number of edges: {len(G.edges)}')
+        logging.info(f'whole graph: number of nodes: {len(G.nodes)}, number of edges: {len(G.edges)}')
 
     # e.g. posDict = {'Chr01':{'posFrom':1,'posTo':2}}
     def genSubGraph(self, sampleList, posDict):
@@ -586,25 +594,46 @@ class PanGraph:
                 posFrom = posDict[contig]['posFrom']
                 posTo = posDict[contig]['posTo']
                 anyNodeId = self.firstNodeId[contig]
-
-                for nodeId in nx.node_connected_component(self.H, anyNodeId):
+                #for nodeId in nx.node_connected_component(self.H, anyNodeId):
+                for nodeId in self.nodes_ref_array:
                     node = G.nodes[nodeId]
-
-                    # why needed? to-be-fix
                     if 'posStart' not in node:
                         continue
 
-                    if sampleList and (node['rank'] != '0' and node['sample'] != self.backbone and node['sample'] not in sampleList):
-                        continue
+                    if node['rank'] == '0': # ref
+                        if self.nodes[nodeId]['chr'] == contig and \
+                            (not posTo or node['posStart'] <= posTo) and \
+                            (not posFrom or node['posEnd'] >= posFrom):
+                            subNodes.append(nodeId)
 
-                    if (not posTo or node['posStart'] <= posTo) and (not posFrom or node['posEnd'] >= posFrom):
-                        subNodes.append(nodeId)
+                    if sampleList and \
+                        (node['rank'] != '0' and \
+                        node['sample'] != self.backbone and \
+                        node['sample'] not in sampleList):
+                        logging.warning('skip? sample')
+                        continue
+                
+                node_add_this_loop = 1
+                while node_add_this_loop>0:
+                    logging.info('loop: {} . size: {}' . 
+                                    format( node_add_this_loop,
+                                        len(subNodes) ))
+                    node_add_this_loop = 0
+                    for nodeId in subNodes:
+                        for nodeId2 in G.neighbors(nodeId):
+                            node2 = G.nodes[nodeId2]
+                            if nodeId2 in self.nodes_ref_array: continue
+                            if nodeId2 not in subNodes:
+                                subNodes.append(nodeId2)
+                                node_add_this_loop = node_add_this_loop + 1
+                                continue
+
             else:
                 for contig in self.firstNodeId:
                     anyNodeId = self.firstNodeId[contig]
                     for nodeId in nx.node_connected_component(self.H, anyNodeId):
                         subNodes.append(nodeId)
-
+        #logging.info("!!\n!!".join(subNodes))
         subGraph = G.subgraph(subNodes)
         self.maxNodesDisplay = int(getVar(copied, "nodes", "maxNodesDisplay"))
         if len(subGraph.nodes) > self.maxNodesDisplay:
@@ -639,28 +668,52 @@ class PanGraph:
 
         return {'color':color,'id':nodeId,'label':nodeId,'shape':shape,'size':size,'title':title,'shape_cy':shape_cy}
 
-    def formatEdgeOutput(self, edge):
-        return {'from':edge[0],'to':edge[1],'arrows':'to'}
+    def formatEdgeOutput(self, edge, graph):
+        e1 = edge[0]
+        e2 = edge[1]
+        return {'from':e1,'to':e2,'arrows':'to', 
+            'title':'{}->{}'.format(graph[e1][e2]['fromRev'], graph[e1][e2]['toRev'])}
 
+    def found_first_backbone_nodeid(self, graph, nodes):
+        min_pos = {}
+        max_pos = {}
+        min_nodeid = {}
+        max_nodeid = {}
+        for nodeId in nodes:
+            sample = graph.nodes[nodeId]['sample']
+            if sample != self.backbone['name']: continue
+            node = graph.nodes[nodeId]
+            chr = node['chr']
+            start = node['posStart']
+            if not (chr in min_pos and start > min_pos[chr]):
+                min_pos[chr] = start
+                min_nodeid[chr] = nodeId
+            if not (chr in max_pos and start < max_pos[chr]):
+                max_pos[chr] = start
+                max_nodeid[chr] = nodeId
+        return(min_nodeid.values(), max_nodeid.values())
+            
     def genDrawGraphResult(self, graph, posDict):
         self.colorPalettes()
 
         nodes = [self.formatNodeOutput(nodeId, graph.nodes[nodeId]) for nodeId in graph.nodes]
-        edges = [self.formatEdgeOutput(edge) for edge in graph.edges]
+        edges = [self.formatEdgeOutput(edge, graph) for edge in graph.edges]
 
-        startNodeIdList = [n for n,d in graph.in_degree() if d == 0]
-        endNodeIdList = [n for n,d in graph.out_degree() if d == 0]
+        startNodeIdList, endNodeIdList = \
+            self.found_first_backbone_nodeid(graph, graph.nodes)
+        #startNodeIdList = [n for n,d in graph.in_degree() if d == 0]
+        #endNodeIdList = [n for n,d in graph.out_degree() if d == 0]
         for nodeId in startNodeIdList:
             if graph.nodes[nodeId]['sample'] != self.backbone['name']: continue
             if 'all' not in posDict and graph.nodes[nodeId]['chr'] not in posDict: continue
             nodes.append({'color':'green','id':f'start','label':'start','shape':'star','size':20,'title':'start','shape_cy':'star'})
-            edges.append({'from':f'start','to':nodeId,'arrows':'to'})
+            edges.append({'from':f'start','to':nodeId,'arrows':'to', 'title':''})
 
         for nodeId in endNodeIdList:
             if graph.nodes[nodeId]['sample'] != self.backbone['name']: continue
             if 'all' not in posDict and graph.nodes[nodeId]['chr'] not in posDict: continue
             nodes.append({'color':'red','id':f'end','label':'end','shape':'star','size':20,'title':'end','shape_cy':'star'})
-            edges.append({'from':nodeId,'to':f'end','arrows':'to'})
+            edges.append({'from':nodeId,'to':f'end','arrows':'to', 'title':''})
 
         self.drawGraphResult = {'error':False, 'nodes_data':nodes,'edges_data':edges}
 
@@ -685,7 +738,7 @@ class PanGraph:
             color = outputNodeInfo[edge['from']]['data']['color']
             # avoid too light color for edges
             color = f'#{int(color[1:3],16)//2:02x}{int(color[3:5],16)//2:02x}{int(color[5:],16)//2:02x}' if color[0] == '#' else color
-            ele = {'data':{'type':'','source':edge['from'],'target':edge['to'],'weight':1,'color':color}}
+            ele = { 'data':{'type':'','source':edge['from'],'target':edge['to'],'weight':1,'color':color, 'title':edge['title'] }}
             cyData.append(ele)
 
         return cyData
