@@ -4,6 +4,7 @@ import sys
 import math
 import logging
 from subprocess import Popen, PIPE
+import shlex
 
 from os import path
 import os
@@ -16,6 +17,7 @@ from natsort import natsorted, ns
 
 from bokeh.embed import file_html
 from bokeh.resources import CDN
+from bokeh.plotting._tools import process_tools_arg
 from dna_features_viewer import GraphicFeature, GraphicRecord
 
 from shutil import copyfile
@@ -24,38 +26,12 @@ import datetime
 from bisect import bisect_left
 import re
 
-#============================= Function =================================
-##logging info
-DEBUG="" #change it when debugging
-logFormat = "%(asctime)s [%(levelname)s] %(message)s"
-level = "DEBUG" if DEBUG != "" else "INFO"
-logging.basicConfig( stream=sys.stderr, level=level, format=logFormat )
-#========================================================================
-
-config = None
-script_directory = os.path.dirname(os.path.realpath(__file__))
-copied = os.path.join(script_directory, '..', "config.ini")
-
-def getVar(cfg, group, var, mustHave=False, forceRead=True):
-    global config
-
-    if not config or forceRead:
-        config = ConfigParser()
-        config.read(cfg)
-
-    try:
-        return config.get(group, var)
-    except:
-        if mustHave:
-            raise
-        else:
-            logging.info(f'Config value [{group}][{var}] not found')
-        return None
-
+from pangraphviewer.utilities import *
 
 class PanGraph:
     seqDescLen = 10
     SN_delim = getVar(copied, 'nodes', 'SN_delim', mustHave=True)
+    maxNodesLimit = int(getVar(copied, 'nodes', 'maxNodesLimit', mustHave=True))
 
     def __init__(self, gfa, outdir, parseRGFA=True):
         self.gfa = gfa
@@ -199,19 +175,51 @@ class PanGraph:
 
         return results
 
-    def parseBed(self, bed):
-        logging.info("Start to parse BED file: '%s'" % bed)
+    def parseBedGff(self, file):
+        output = {'gene':{},'warning':'','error':'','bed_contigs':{}}
 
+        logging.info("Start to parse bed/gff/gtf file: '%s'" % file)
+
+        format = self.getBedGffFormat(file)
+        if not format:
+            output['error'] = 'Unknown format'
+            return output
+
+        warning = f'The file is in {format} format'
         gene, bedContigs, warning, error = {},{},'',''
-        with open(bed, 'r') as BED:
+        with open(file, 'r') as f:
             try:
-                for line in BED:
-                    items = line.strip().split('\t')
-                    bedContigs[items[0]] = 1
-                    geneId = items[3]
-                    gene[geneId] = 1
+                for line in f:
+                    if line[0] == '#': continue
+                    fields = line.strip().split('\t')
+                    bedContigs[fields[0]] = 1
+
+                    if format == 'BED':
+                        geneId = fields[3]
+                        gene[geneId] = 1
+                    elif format == 'GFF' or format == 'GTF':
+                        if fields[2] != "gene": continue
+
+                        if format == 'GFF':
+                            attr = dict(x.split('=') for x in fields[8].split(';') if x.count('=') == 1)
+                        else:
+                            attr = dict(shlex.split(x.strip()) for x in fields[8].split(';') if x.strip().count(' ') == 1)
+
+                        geneId = None
+                        for entry in ['ID', 'Name', 'gene_id', 'gene_name']:
+                            if entry in attr:
+                                geneId = attr[entry]
+                                break
+                        if not geneId:
+                            error = f'Missing ID/Name/gene_id/gene_name in {format}'
+                            logging.error(error)
+                            break
+
+                        gene[geneId] = 1
             except:
-                error = 'Invalid BED format'
+                #raise
+                output['error'] = 'Error in parsing the file'
+                return output
 
         return {'gene':gene,'warning':warning,'error':error,'bed_contigs':list(bedContigs.keys())}
 
@@ -231,7 +239,7 @@ class PanGraph:
             try:
                 for lineNum, line in enumerate(f):
                     if line[0] == 'S':
-                        if targetChr and targetChr not in line: continue
+                        #if targetChr and targetChr not in line: continue
 
                         row = line.strip().split('\t')
 
@@ -259,6 +267,8 @@ class PanGraph:
 
                         # update backbone info
                         if rank == '0':
+                            if targetChr and contig != targetChr: continue
+
                             backbone['contigs'][contig] = 1
                             backbone['name'] = sample
 
@@ -274,6 +284,13 @@ class PanGraph:
                     elif line[0] == 'L':
                         row = line.strip().split('\t')
                         type, fromNodeId, fromStrand, toNodeId, toStrand = row[:5]
+
+                        if fromNodeId not in nodes or toNodeId not in nodes: continue
+
+                        if (nodes[fromNodeId]['rank'] == '0' and fromStrand == '-' and nodes[toNodeId]['rank'] != '0' and toStrand == '+' ) or \
+                           (nodes[fromNodeId]['rank'] != '0' and fromStrand == '+' and nodes[toNodeId]['rank'] == '0' and toStrand == '-' ):
+                           fromNodeId, toNodeId = toNodeId, fromNodeId
+
                         edges.append({'type':type,'fromNodeId':fromNodeId,'fromStrand':fromStrand,
                                            'toNodeId':toNodeId,'toStrand':toStrand})
             except Exception as e:
@@ -337,23 +354,32 @@ class PanGraph:
 
         logging.info(f"The information of selected node(s) has been saved to {outfile}")
 
-    def loadBed(self, bed):
-        logging.info("Start to parse BED file: '%s'" % bed)
+    def getBedGffFormat(self, file):
+        filename, fileext = os.path.splitext(file)
+        fileext = fileext.upper()
+        if not fileext.startswith('.GFF') and not fileext.startswith('.BED') and not fileext.startswith('.GTF'):
+            return None
 
-        bedInfo = {}
-        contigs = {}
-        with open(bed, 'r') as BED:
-            for line in BED:
-                items = line.strip().split('\t')
-                contigs[items[0]] = 1
-                geneId = items[3]
-                bedInfo[geneId] = {'Chr':items[0],'Start':int(items[1]),'End':int(items[2]),
-                                   'GeneID':items[3], 'Orientation':items[5]}
+        fields = None
+        with open(file) as f:
+            for line in f:
+                if line[0] == '#': continue
+                fields = line.strip().split('\t')
+                break
 
-        self.bed = bedInfo
-        logging.info("Complete BED file parsing ...")
+        if (fileext.startswith('.GFF') or fileext.startswith('.GTF')) \
+            and fields[3].isdigit() and fields[4].isdigit():
+            # check for compulsory field in attr
+            # ...
 
-        return {'bed_info':bedInfo, 'bed_contigs': list(contigs.keys())}
+            if fileext.startswith('.GFF'): return 'GFF'
+            if fileext.startswith('.GTF'): return 'GTF'
+        elif fileext.startswith('.BED') and fields[1].isdigit() and fields[2].isdigit():
+            # check for compulsory field in attr
+            # ...
+            return 'BED'
+        else:
+            return None
 
     def overlapGenes(self, geneId):
         if geneId not in self.bed:
@@ -404,23 +430,26 @@ class PanGraph:
                         sPos = int(node['inf']['raw'].split('_')[1])
                         ePos = int(node['inf']['raw'].split('_')[2])
                         self.features.append(GraphicFeature(start=sPos, end=ePos, strand=0, 
-                                                color=self.nameCols[node['sample']], label=nodeId))
+                                                color=self.nameCols[node['sample']], label="This is node '%s'" % nodeId))
                     else:
                         self.features.append(GraphicFeature(start=node['posStart'], end=node['posEnd'], strand=0,
-                                                color=self.nameCols[node['sample']], label=nodeId))
+                                                color=self.nameCols[node['sample']], label="This is node '%s'" % nodeId))
 
         if geneOri == "+":
             self.features.append(GraphicFeature(start=geneStart, end=geneEnd, strand=+1, color="#cffccc",
-                                                label='%s @%s: %d-%d' % (geneId, geneChr, geneStart, geneEnd)))
+                                                label="This is gene '%s @%s: %d-%d'" % (geneId, geneChr, geneStart, geneEnd)))
         if geneOri == "-":
             self.features.append(GraphicFeature(start=geneStart, end=geneEnd, strand=-1, color="#cffccc",
-                                                label='%s @%s: %d-%d' % (geneId, geneChr, geneStart, geneEnd)))
+                                                label="This is gene '%s @%s: %d-%d'" % (geneId, geneChr, geneStart, geneEnd)))
         self.record = GraphicRecord(sequence_length=geneEnd*2, features=self.features)
 
     def drawOverlapGenes(self, geneId):
         self.record.plot(figure_width=20)
         bokeh_figure = self.record.plot_with_bokeh(figure_width=13, figure_height=8)
         #bokeh.plotting.show(bokeh_figure)
+
+        tool_objs, tool_map = process_tools_arg(bokeh_figure, "xpan,xwheel_zoom,reset,tap")
+        bokeh_figure.tools = tool_objs
 
         drawOverlap = os.path.join(self.outdir, 'drawOverlap_with_Gene-%s.html' % geneId)
 
@@ -438,7 +467,7 @@ class PanGraph:
                     if row[0] != 'S': continue
 
                     nodeId = row[1]
-                    if nodeId not in nodeIdDict:
+                    if nodeId not in nodeIdDict and f'{nodeId}*' not in nodeIdDict:
                         continue
 
                     seq = row[2]
@@ -490,7 +519,7 @@ class PanGraph:
         self.nodesInfo = '\n'.join(nodesInfo)
 
     def revComp(self, seq):
-        trans = str.maketrans('ACGT', 'TGCA')
+        trans = str.maketrans('ACGTN*', 'TGCAN*')
         return seq.translate(trans)[::-1]
 
     def genGraph(self):
@@ -508,24 +537,39 @@ class PanGraph:
                 continue
 
             if fromStrand == '-':
-                newNodeId = f'{fromNodeId}.reversed'
+                newNodeId = f'{fromNodeId}*'
                 if newNodeId not in G.nodes:
                     G.add_node(newNodeId, **self.nodes[fromNodeId])
                     G.nodes[newNodeId]['nodeId'] = newNodeId
-                    #G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[fromNodeId]['seq'])
-                    G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[fromNodeId]['seqLastDesc'])
+                    G.nodes[newNodeId]['seqDesc'] = self.revComp(self.nodes[fromNodeId]['seqLastDesc'])
+                    G.nodes[newNodeId]['seqLastDesc'] = self.revComp(self.nodes[fromNodeId]['seqDesc'])
                 fromNodeId = newNodeId
 
             if toStrand == '-':
-                newNodeId = f'{toNodeId}.reversed'
+                newNodeId = f'{toNodeId}*'
                 if newNodeId not in G.nodes:
                     G.add_node(newNodeId, **self.nodes[toNodeId])
                     G.nodes[newNodeId]['nodeId'] = newNodeId
-                    #G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[toNodeId]['seq'])
-                    G.nodes[newNodeId]['seq'] = self.revComp(self.nodes[toNodeId]['seqLastDesc'])
+                    G.nodes[newNodeId]['seqDesc'] = self.revComp(self.nodes[toNodeId]['seqLastDesc'])
+                    G.nodes[newNodeId]['seqLastDesc'] = self.revComp(self.nodes[toNodeId]['seqDesc'])
                 toNodeId = newNodeId
 
             G.add_edge(fromNodeId, toNodeId)
+
+        # fixing for added reverse
+        for edge in self.edges:
+            fromNodeId, fromStrand = edge['fromNodeId'], edge['fromStrand']
+            toNodeId, toStrand = edge['toNodeId'], edge['toStrand']
+
+            if fromStrand == '+' and toStrand == '+' and \
+               f'{fromNodeId}*' in G.nodes and f'{toNodeId}*' in G.nodes:
+               G.add_edge(f'{toNodeId}*', f'{fromNodeId}*')
+            elif fromStrand == '+' and toStrand == '-' and \
+               f'{fromNodeId}*' in G.nodes and f'{toNodeId}' in G.nodes:
+               G.add_edge(f'{toNodeId}', f'{fromNodeId}*')
+            elif fromStrand == '-' and toStrand == '+' and \
+               f'{toNodeId}*' in G.nodes and f'{fromNodeId}' in G.nodes:
+               G.add_edge(f'{toNodeId}*', f'{fromNodeId}')
 
         self.G = G
 
@@ -618,18 +662,14 @@ class PanGraph:
     def formatNodeOutput(self, nodeId, node, showSeq=True):
         shape = getVar(copied, 'nodes',f"{node['inf']['sv_type']}_shape") if 'sv_type' in node['inf'] else getVar(copied, 'nodes', 'BB_shape')
         shape_cy = getVar(copied, 'cytoscape',f"{node['inf']['sv_type']}_shape") if 'sv_type' in node['inf'] else getVar(copied, 'cytoscape', 'BB_shape')
-        # to-be-fix
+        sv_type = node['inf']['sv_type'] if 'sv_type' in node['inf'] else ''
+
         size = 1 if not node['len'] else float(f"{math.log(abs(node['len']), 10)*8 + 1:.1f}") 
         color = self.nameCols[node['sample']] if node['sample'] in self.nameCols else '#A2A2A2'
         sample = node['sample']
-        try:
-            pos = node['posStart']
-        except:
-            #raise
-            pos = 0
-
+        pos = node['lenBefore'] if 'lenBefore' in node else 0
         inf = node['inf']['raw'] if 'raw' in node['inf'] else ''
-        seqDesc = f"{node['seqDesc']}..." if node['len'] > len(node['seqDesc']) else node['seqDesc']
+        seqDesc = f"{node['seqDesc']}..." if node['len'] > len(node['seqDesc']) and node['seqDesc'] != '*' else node['seqDesc']
 
         #title = f"Resource: {node['sample']}_{node['chr']}; len: {node['len']}"
         title = f"NodeId: {nodeId}; Resource: {node['sample']}_{node['chr']}; Len: {node['len']}"
@@ -637,7 +677,7 @@ class PanGraph:
         if inf: title += f"; Info: {inf}"
         if showSeq: title += f"; Seq: {seqDesc}"
 
-        return {'color':color,'id':nodeId,'label':nodeId,'shape':shape,'size':size,'title':title,'shape_cy':shape_cy}
+        return {'color':color,'id':nodeId,'label':nodeId,'shape':shape,'size':size,'title':title,'shape_cy':shape_cy,'sv_type':sv_type,'sample':sample}
 
     def formatEdgeOutput(self, edge):
         return {'from':edge[0],'to':edge[1],'arrows':'to'}
@@ -650,17 +690,17 @@ class PanGraph:
 
         startNodeIdList = [n for n,d in graph.in_degree() if d == 0]
         endNodeIdList = [n for n,d in graph.out_degree() if d == 0]
-        for nodeId in startNodeIdList:
+        for idx, nodeId in enumerate(startNodeIdList):
             if graph.nodes[nodeId]['sample'] != self.backbone['name']: continue
             if 'all' not in posDict and graph.nodes[nodeId]['chr'] not in posDict: continue
-            nodes.append({'color':'green','id':f'start','label':'start','shape':'star','size':20,'title':'start','shape_cy':'star'})
-            edges.append({'from':f'start','to':nodeId,'arrows':'to'})
+            nodes.append({'color':'green','id':f'start_{idx+1}','label':'start','shape':'star','size':20,'title':'start','shape_cy':'star'})
+            edges.append({'from':f'start_{idx+1}','to':nodeId,'arrows':'to'})
 
-        for nodeId in endNodeIdList:
+        for idx, nodeId in enumerate(endNodeIdList):
             if graph.nodes[nodeId]['sample'] != self.backbone['name']: continue
             if 'all' not in posDict and graph.nodes[nodeId]['chr'] not in posDict: continue
-            nodes.append({'color':'red','id':f'end','label':'end','shape':'star','size':20,'title':'end','shape_cy':'star'})
-            edges.append({'from':nodeId,'to':f'end','arrows':'to'})
+            nodes.append({'color':'red','id':f'end_{idx+1}','label':'end','shape':'star','size':20,'title':'end','shape_cy':'star'})
+            edges.append({'from':nodeId,'to':f'end_{idx+1}','arrows':'to'})
 
         self.drawGraphResult = {'error':False, 'nodes_data':nodes,'edges_data':edges}
 
@@ -769,7 +809,7 @@ class PanGraph:
                     data = f_in.read()
                     cyData = self.genCyDataFromDrawGraphResult(self.drawGraphResult)
 
-                    suppFiles = ['loader.gif','cytoscape-euler.js','cytoscape-qtip.js','cytoscape-context-menus.js','cytoscape-context-menus.css']
+                    suppFiles = ['loader.gif','images.js']
                     for suppFile in suppFiles:
                         src = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'template', suppFile)
                         dest = os.path.join(self.outdir, suppFile)
@@ -836,6 +876,46 @@ class PanGraph:
         num = int(getVar(copied, "nodes", "geneNodeOverlapCntThreshold"))
         return num
 
+    def loadBedGff(self, file):
+        self.bed = {}
+
+        format = self.getBedGffFormat(file)
+        logging.info(f"File format: '{format}'")
+        if not format:
+            logging.error(f'!!!!! loading Bed/Gff aborted: unknown format')
+            return
+
+        logging.info(f"Start to load {format.upper()} file: '{file}'")
+        with open(file, 'r') as f:
+            for line in f:
+                if line[0] == '#': continue
+                fields = line.strip().split('\t')
+                if format == 'BED':
+                    geneId = fields[3]
+                    self.bed[geneId] = {'Chr':fields[0],'Start':int(fields[1]),'End':int(fields[2]),
+                                       'GeneID':fields[3], 'Orientation':fields[5]}
+                elif format == 'GFF' or format == 'GTF':
+                    if fields[2] != "gene": continue
+
+                    if format == 'GFF':
+                        attr = dict(x.split('=') for x in fields[8].split(';') if x.count('=') == 1)
+                    else:
+                        attr = dict(shlex.split(x.strip()) for x in fields[8].split(';') if x.strip().count(' ') == 1)
+
+                    geneId = None
+                    for entry in ['ID', 'Name', 'gene_id', 'gene_name']:
+                        if entry in attr:
+                           geneId = attr[entry]
+                           break
+                    if not geneId:
+                        logging.error(f'!!!!! Missing ID/Name/gene_id/gene_name in {format}')
+                        break
+
+                    self.bed[geneId] = {'Chr':fields[0],'Start':int(fields[3]),'End':int(fields[4]),
+                                       'GeneID':geneId, 'Orientation':fields[6]}
+
+        logging.info(f"Complete {format.upper()} file parsing ...")
+
     def nodeGeneOverlap(self, bed, overlapNodeCountThreshold):
         logging.info(f'finding genes which overlap more than {overlapNodeCountThreshold} nodes ...')
 
@@ -843,12 +923,8 @@ class PanGraph:
 
         bedInfo = {}
         # load bed
-        with open(bed, 'r') as BED:
-            for line in BED:
-                items = line.strip().split('\t')
-                geneId = items[3]
-                bedInfo[geneId] = {'Chr':items[0],'Start':int(items[1]),'End':int(items[2]),
-                                   'GeneID':items[3], 'Orientation':items[5]}
+        self.loadBedGff(bed)
+        bedInfo = self.bed
 
         # get sorted list of backbone node position
         posStartList = sorted([self.G.nodes[nodeId]['lenBefore'] for nodeId in self.G.nodes
@@ -860,7 +936,11 @@ class PanGraph:
             endIdx = self.binSearch(posStartList, gene['End'])
 
             if endIdx - startIdx + 1 > overlapNodeCountThreshold:
-                 results[geneId] = {'startPos':posStartList[startIdx],'endPos':posStartList[endIdx]}
+                 gene_chr = self.bed[geneId]['Chr']
+                 gene_start = self.bed[geneId]['Start']
+                 gene_end = self.bed[geneId]['End']
+                 results[geneId] = {'gene_chr':gene_chr,'gene_start':gene_start,'gene_end':gene_end,
+                                    'startPos':posStartList[startIdx],'endPos':posStartList[endIdx]}
 
         #print(results)
 

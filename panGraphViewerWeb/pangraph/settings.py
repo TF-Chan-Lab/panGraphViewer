@@ -27,10 +27,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'bvclmfhj=(5$)3j(ni-x7_=y8@urm87j@xo6(l&r^farqmxww8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','bal37.cs.hku.hk','localhost','147.8.177.152']
+ALLOWED_HOSTS = ['127.0.0.1','localhost','147.8.177.152']
 
 
 # Application definition
@@ -45,11 +45,12 @@ INSTALLED_APPS = [
     'pangraphviewer.apps.pangraphviewerConfig',
 
     'bootstrap4',
-    'fontawesomefree'
+    'fontawesome-free'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -165,3 +166,6 @@ TMPPATH_PREFIX = env.str('TMPPATH_PREFIX')
 # config/settings.py
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+STATIC_ROOT = BASE_DIR + '/staticfiles'
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

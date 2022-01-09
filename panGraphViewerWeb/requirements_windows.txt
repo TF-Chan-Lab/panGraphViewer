@@ -8,7 +8,8 @@ natsort
 attrdict
 networkx
 pyfaidx
-fontawesomefree==5.15
+fontawesome-free==5.15
 bokeh==2.2.3
 dna_features_viewer
 pandas
+whitenoise

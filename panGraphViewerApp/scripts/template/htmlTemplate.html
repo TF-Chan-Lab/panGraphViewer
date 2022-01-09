@@ -1,10 +1,36 @@
 <html>
 <head>
+<script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
-<center>
-<h1>{%title%}</h1>
-</center>
+
+<style>
+.hide {
+  display: none;
+}
+
+.myDIV:hover + .hide {
+  display: block;
+  color: red;
+}
+</style>
+
+    <center>
+        <h1>{%title%}</h1>
+        <div class="myDIV">Legend (mouseover here to show)</div>
+        <div class="hide">
+<table>
+<tr>
+<td style="display: table-cell;vertical-align: top">
+    <div id='colorTable'></div>
+</td>
+<td style="display: table-cell;vertical-align: top">
+    <div id='shapeTable'></div>
+</td>
+</tr>
+</table>
+        </div>
+    </center>
 
 <!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
 <script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
@@ -17,6 +43,7 @@
             background-color: #ffffff;
             border: 1px solid lightgray;
             position: relative;
+            //position: 150px;
             float: left;
         }
 
@@ -199,6 +226,28 @@
 
     drawGraph();
 
+</script>
+<script src="images.js"></script>
+<script>
+var colors = {%colors%};
+var shapes = {%shapes%};
+var hasReversed = {%has_reversed%};
+$(document).ready(function() {
+    var $table = $('<table/>');
+    $.each(colors, function(key, value) {
+        $table.append( '<tr><td bgcolor="' + value + '">' + key + '</td></tr>' );
+    });
+    if (hasReversed) {
+        $table.append( '<tr><td style="display: table-cell">(*) nodes with seq<br>in reverse complement <br>of the original one</td></tr>' );
+    }
+    $('#colorTable').append($table);
+
+    var $table = $('<table/>');
+    $.each(shapes, function(key, value) {
+        $table.append( '<tr><td><img src="' + images['vis'][value] + ' " width="20"></td><td>' + key + '</td></tr>' );
+    });
+    $('#shapeTable').append($table);
+});
 </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 from subprocess import Popen, PIPE
+from configparser import ConfigParser
 
 #============================= Function =================================
 ##logging info
@@ -13,6 +14,29 @@ level = "DEBUG" if DEBUG != "" else "INFO"
 logging.basicConfig( stream=sys.stderr, level=level, format=logFormat )
 #========================================================================
 
+config = None
+script_directory = os.path.dirname(os.path.realpath(__file__))
+copied = os.path.join(script_directory, '..', "config.ini")
+
+def getVar(cfg, group, var, mustHave=False, forceRead=True):
+    global config
+
+    if not config or forceRead:
+        config = ConfigParser()
+        config.read(cfg)
+
+    try:
+        return config.get(group, var)
+    except:
+        if mustHave:
+            raise
+        else:
+            logging.info(f'Config value [{group}][{var}] not found')
+        return None
+
+def rev_comp(seq):
+    trans = str.maketrans('ACGTN*', 'TGCAN*')
+    return seq.translate(trans)[::-1]
 
 def checkDir(Dirname):
     logging.info("Checking folder: '%s'" % Dirname)

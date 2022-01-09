@@ -12,6 +12,7 @@ from django.conf import settings
 
 from pangraphviewer.utilities import *
 from pangraphviewer.panGraph import *
+from pangraphviewer.gfa2rGFA import *
 
 from .models import *
 
@@ -73,6 +74,8 @@ def getdata(request):
     sampleList = None
 
     data = None
+    error = ''
+    warning = ''
 
     # check for input
     if input_type == 'gfa':
@@ -95,11 +98,22 @@ def getdata(request):
 
     graph = PanGraph(gfa, outdir=get_work_dir(request))
     drawGraphResult = graph.drawGraph(sampleList, chr, start, end, isGenHtml=False)
+    nodeCount = len(drawGraphResult['nodes_data'])
+    if nodeCount > graph.maxNodesLimit:
+        error = f"The num. of nodes in the selected region is '{nodeCount}', which is bigger than the limit '{graph.maxNodesLimit}' in settings. Please modify Start/End Position to limit the number of nodes."
+
+    if input_type == 'vcf':
+        warning = f"The vcf file has been converted to rGFA format as {prefix}.gfa, and can be found in 'uploaded (r)GFA file' list"
+
     status = 400 if drawGraphResult['error'] else 200
 
     cyData = graph.genCyDataFromDrawGraphResult(drawGraphResult)
+    colors = {node['sample']:node['color'] for node in drawGraphResult['nodes_data'] if 'sample' in node}
+    shapes = {node['sv_type']:node['shape_cy'] for node in drawGraphResult['nodes_data'] if 'sv_type' in node and node['sv_type']}
+    hasReversed = True if [node for node in drawGraphResult['nodes_data'] if node['id'][-1] == '*'] else False
+    legend = {'colors':colors, 'shapes':shapes, 'has_reversed': hasReversed}
 
-    return JsonResponse({'cyData':cyData,'gfa':os.path.basename(gfa)}, safe=False, status=status)
+    return JsonResponse({'error':error,'warning':warning,'cyData':cyData,'gfa':os.path.basename(gfa),'legend':legend}, safe=False, status=status)
 
 @login_required
 def parse_gfa(request):
@@ -170,23 +184,26 @@ def parse_bed(request):
 
     #graph = PanGraph(gfa, outdir=get_work_dir(request), parseRGFA=False)
     graph = PanGraph(gfa, outdir=get_work_dir(request))
-    results = graph.parseBed(bed)
+    results = graph.parseBedGff(bed)
     bed_contigs = results['bed_contigs']
     gfa_contigs = graph.inf['backbone']['contigs']
     common_contigs = [value for value in bed_contigs if value in gfa_contigs]
 
-    error = results['error']
-    #warning = results['warning']
-    warning = f'{len(common_contigs)} out of {len(bed_contigs)} contigs from BED found in GFA'
-    if not results['error']:
-        graph.loadRGFA()
-        graph.genGraph()
-        #graph.updateNodes()
-        data = graph.nodeGeneOverlap(bed, 2)
+    if not common_contigs and not results['error']:
+        results['error'] = 'The contig/chr names in the selected file are different from those in the rGFA file. Please check'
+
+    if results['error']:
+        return JsonResponse({'error':results['error']}, status=200)
+
+    graph.loadRGFA()
+    graph.genGraph()
+    #graph.updateNodes()
+    data = graph.nodeGeneOverlap(bed, 2)
 
     results = {}
     results['status'] = 0
     results['gene'] = sorted(list(data.keys()))
+    results['gene_info'] = data
     results['time'] = time.time() - start_time
     results['warning'] = warning
     results['error'] = error
@@ -272,16 +289,18 @@ def getnodes(request):
     nodes = panGraph.getNodeFromRGFA(seqname)
 
     for nodeId in nodes:
-       node = nodes[nodeId]
-       resource = f"{node['sample']}_{node['chr']}"
-       results.append({'seqname':nodeId, 'seq':node['seq'], 'len':node['len'], 'resource':resource})
+        node = nodes[nodeId]
+        title = f"NodeId: {nodeId}; Resource: {node['sample']}_{node['chr']}; Len: {node['len']}"
+        if node['rank'] == '0':
+            title += f"; Pos: {node['lenBefore']} - {node['lenBefore']+node['len']-1}"
+        results.append({'seqname':nodeId, 'title':title, 'seq':node['seq']})
 
     return results
 
 @login_required
 def viewseq(request):
     nodes = getnodes(request)
-    text = '\n'.join([f">{node['seqname']}\tResource:{node['resource']}\tlen:{node['len']}\n{node['seq']}" for node in nodes])
+    text = '\n'.join([f">{node['seqname']}\t{node['title']}\n{node['seq']}" for node in nodes])
 
     mime_type = "text/plain"
     response = HttpResponse(content=text, content_type=mime_type)
@@ -291,7 +310,7 @@ def viewseq(request):
 @login_required
 def downloadseq(request):
     nodes = getnodes(request)
-    text = '\n'.join([f">{node['seqname']}\tResource:{node['resource']}\tlen:{node['len']}\n{node['seq']}" for node in nodes])
+    text = '\n'.join([f">{node['seqname']}\t{node['title']}\n{node['seq']}" for node in nodes])
 
     mime_type = "text/plain"
     filename = 'sequence.txt'
@@ -367,16 +386,46 @@ def vcf_to_gfa(request):
 @login_required
 def upload_file(request):
     if request.is_ajax():
+        error, warning = '', ''
         work_dir = get_work_dir(request)
         upload = request.FILES['image']
         file_type = request.POST.get('file_type','')
         file_path = get_work_dir(request, [file_type], upload.name)
+        file_path_orig = file_path
         with open(file_path,'wb') as f:
             for chunk in upload.chunks():
                 f.write(chunk)
         os.chmod(file_path, 0o666)
 
-        return JsonResponse({'filepath': file_path}, status=200)
+        if file_type == 'gfa':
+            retcode = GFA2rGFA(file_path, None).checkGfaFormat()
+            if retcode == 2: # GFA1
+                file = os.path.split(file_path)[1]
+                converted = f'{os.path.splitext(file)[0]}_converted{os.path.splitext(file)[1]}'
+                warning = f'The file is in GFA v1. Conversion has been taken, and the converted file {converted} will be used instead'
+                converted = get_work_dir(request,['gfa'], converted)
+                results = convert_gfa_to_rgfa(file_path, converted)
+                returncode = results['returncode']
+                if returncode == 4:
+                    error = 'Missing GFA field in the input file. Abort!'
+                elif returncode == 5:
+                    error = 'Both seq and LN tag are missing in the input file. Abort!'
+                elif returncode == 6:
+                    error = 'The file is in GFA v1, but error occurs during conversion. Abort!'
+                elif returncode == 7:
+                    error = 'Path info is missing from the input GFA1 file, which is necessary for conversion. Abort!'
+                else:
+                    file_path = converted
+            elif retcode == 3: # UNKNOWN
+                error = 'The input file is in an unknown format. Abort!'
+
+            if retcode != 1:
+                try:
+                    os.remove(file_path_orig)
+                except OSError:
+                    pass
+
+        return JsonResponse({'filepath': file_path,'error':error,'warning':warning}, status=200)
 
     return JsonResponse({}, status=400)
 
@@ -432,7 +481,7 @@ def draw_overlap_gene(request):
     bed = get_work_dir(request, ['bed'], bed)
 
     graph = PanGraph(gfa, outdir=get_work_dir(request, ['gene']))
-    graph.loadBed(bed)
+    graph.loadBedGff(bed)
     graph.overlapGenes(gene_id)
     graph.drawOverlapGenes(gene_id)
     path = get_work_dir(request, ['gene'])

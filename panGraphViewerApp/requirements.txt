@@ -1,5 +1,5 @@
-PyQt5
-PyQtWebEngine
+PyQt5==5.12.3
+PyQtWebEngine==5.12.1
 configparser
 pandas
 bokeh==2.2.3

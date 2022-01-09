@@ -4,19 +4,25 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
     <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
-
-    <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.css">
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
 
+<!--
     <script src="cytoscape-context-menus.js"></script>
     <link rel="stylesheet" type="text/css" href="cytoscape-context-menus.css">
+-->
+    <script src="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.js"></script>
+    <link href="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.css" rel="stylesheet" type="text/css" />
 
-    <script src="cytoscape-euler.js"></script>
-    <script src="cytoscape-qtip.js"></script>
+    <script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@1.0.4/cytoscape-popper.min.js"></script>
+    <script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@4.0.1/index.css" />
+
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
 
     <style>
         body {
@@ -27,7 +33,7 @@
         #cy {
             position: absolute;
             left: 0;
-            top: 0;
+            top: 110;
             bottom: 0;
             right: 0;
             z-index: 999;
@@ -57,7 +63,34 @@
 </head>
 
 <body>
-    <center><h1>{%title%}</h1></center>
+
+<style>
+.hide {
+  display: none;
+}
+
+.myDIV:hover + .hide {
+  display: block;
+  color: red;
+}
+</style>
+
+    <center>
+        <h1>{%title%}</h1>
+        <div class="myDIV">Legend (mouseover here to show)</div>
+        <div class="hide">
+<table>
+<tr>
+<td style="display: table-cell;vertical-align: top">
+    <div id='colorTable'></div>
+</td>
+<td style="display: table-cell;vertical-align: top">
+    <div id='shapeTable'></div>
+</td>
+</tr>
+</table>
+        </div>
+    </center>
     <div id="cy"></div>
     <div id="loading"><img id="loading-image" src="loader.gif" alt="Loading..." width="150" height="150" /></div>
 </body>
@@ -67,11 +100,26 @@
     });
 
     function genGraph() {
+        function makePopper(ele) {
+            let ref = ele.popperRef();
+
+            ele.tippy = tippy(ref, {
+                content: () => {
+                    let content = document.createElement('div');
+
+                    content.innerHTML = ele.data('title');
+
+                    return content;
+                },
+                trigger: 'manual'
+            });
+        }
+
         var cy = window.cy = cytoscape({
             container: document.getElementById('cy'),
 
             layout: {
-                name: 'euler',
+                name: 'fcose',
                 randomize: true,
                 animate: false,
 
@@ -132,31 +180,6 @@
             elements: JSON.parse(`{%data%}`),
         });
 
-        cy.on('mouseover', 'node', function(event) {
-            this.qtip({
-                content: this.data('title'),
-                position: {
-                    my: 'top center',
-                    at: 'bottom center'
-                },
-                style: {
-                    classes: 'qtip-bootstrap',
-                    tip: {
-                        width: 16,
-                        height: 8
-                    }
-                },
-                show: {
-                    event: event.type,
-                    ready: true
-                },
-                hide: {
-                    event: 'mouseout unfocus'
-                }
-
-            });
-        });
-
         cy.contextMenus({
             menuItems: [
                 {
@@ -197,6 +220,40 @@
             ]
         });
 
+        cy.ready(function() {
+            cy.elements().forEach(function(ele) {
+                makePopper(ele);
+            });
+        });
+
+        cy.nodes().unbind('mouseover');
+        cy.nodes().bind('mouseover', (event) => event.target.tippy.show());
+
+        cy.nodes().unbind('mouseout');
+        cy.nodes().bind('mouseout', (event) => event.target.tippy.hide());
+
     }
+</script>
+<script src="images.js"></script>
+<script>
+var colors = {%colors%};
+var shapes = {%shapes%};
+var hasReversed = {%has_reversed%};
+$(document).ready(function() {
+    var $table = $('<table/>');
+    $.each(colors, function(key, value) {
+        $table.append( '<tr><td bgcolor="' + value + '">' + key + '</td></tr>' );
+    });
+    if (hasReversed) {
+        $table.append( '<tr><td style="display: table-cell">(*) nodes with seq<br>in reverse complement <br>of the original one</td></tr>' );
+    }
+    $('#colorTable').append($table);
+
+    var $table = $('<table/>');
+    $.each(shapes, function(key, value) {
+        $table.append( '<tr><td><img src="' + images['cy'][value] + ' " width="20"></td><td>' + key + '</td></tr>' );
+    });
+    $('#shapeTable').append($table);
+});
 </script>
 </html>

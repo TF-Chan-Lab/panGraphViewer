@@ -43,7 +43,7 @@ function upload_add_listener_change(prefix) {
                 refresh_uploaded_list(`${prefix}_path`,prefix,filename);
             },
             error: function(error){
-                console.log('error', error)
+                //console.log('error', error)
                 update_alert_box('Ups... something went wrong', 'alert-danger')
             },
             cache: false,

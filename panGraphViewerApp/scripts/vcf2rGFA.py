@@ -160,7 +160,7 @@ class VCF2rGFA:
                     fromNodeID = nodeIDMap[i[0]]
                     toNodeID = nodeIDMap[i[1]]
                     fd.write(f'L\t{fromNodeID}\t{edges[i][0]}\t{toNodeID}\t{edges[i][1]}\t0M\n')
-        
+
         os.chmod(gfa, 0o666)
 
         logging.info(f"Complete generating rGFA {gfa}")

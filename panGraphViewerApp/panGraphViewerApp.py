@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
-###########################################################
+#############################################################
 ## Application:               panGraphViewer
 ## Author:                    Yuxuan Yuan
 ## Email:                     yuxuan.yuan@outlook.com
-## Last modification Date:    03/08/2021
-## Copyright: Copyright (c) 2021 the Ting-Fung Chan Lab
+## Last modification Date:    08/01/2022
+## Copyright: Copyright (c) 2021-2022 the Ting-Fung Chan Lab
 ## CUHK, Hong Kong SAR, China
-###########################################################
+#############################################################
 
 #======================== libraries ==========================
 import os
@@ -23,13 +23,14 @@ from configparser import ConfigParser, ConverterMapping
 import webbrowser
 import subprocess
 from time import sleep
-from natsort import natsorted 
+from natsort import natsorted
+from networkx.drawing.layout import rescale_layout 
 #from scripts.screenClipping import *
 #from scripts.screenshot import *
 from scripts.utilities import *
 from scripts.vcf2rGFA import *
+from scripts.gfa2rGFA import *
 from scripts.NodesInfoBrowser import *
-
 
 from scripts.panGraph import *
 
@@ -80,30 +81,9 @@ try:
     )
 
 except ImportError:
-    from PySide2.QtGui import*
-    from PySide2 import (
-        sip,
-        QtCore,
-        QtGui,
-        QtWidgets,
-        QtWebEngineWidgets,
-    )
-    from PySide2.QtWidgets import (
-        QApplication,
-        QMainWindow,
-        QWidget,
-        QInputDialog,
-        QLineEdit,
-        QFileDialog,
-    )
-    from PySide2.QtCore import (
-        QObject,
-        QThread,
-        pyqtSignal,
-        pyqtSlot,
-        QRunnable,
-        QThreadPool,
-    )
+    print("\nOops! Something is wrong when load the python libaries")
+    print("Please follow the instruction to install the python dependencies and then try again!\n")
+
 # Global variable
 tool = os.path.realpath(__file__)
 toolPath = os.path.dirname(tool)
@@ -129,7 +109,6 @@ class WorkerSignals(QObject):
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
     progress = pyqtSignal(tuple)
-
 
 class Worker(QRunnable):
     '''
@@ -498,7 +477,7 @@ class NodeShapes(QWidget):
         self.ui = Ui_nodeShapes()
         self.ui.setupUi(self)
 
-        self.VisOptions = ['dot', 'ellipse', 'circle', 
+        self.VisOptions = ['dot', 'ellipse', 'square', 
         'database', 'box', 'text', 
         'diamond', 'star', 'triangle', 
         'triangleDown']
@@ -866,6 +845,7 @@ class Main(QMainWindow):
         self.progress = None
         self.canvas = None
         self.outDir = None
+        self.outDir1 = None
         self.run = None
         self.lines = list()
         self.event_stop = threading.Event()
@@ -1047,13 +1027,13 @@ class Main(QMainWindow):
             QtWidgets.QMessageBox.Ok)            
 
     def update(self):
-        response = QtWidgets.QMessageBox.question(self, 'Warning !', 'Do you want to open the GitHub release page to check new version ?',
+        response = QtWidgets.QMessageBox.question(self, 'Warning !', 'Do you want to open the GitHub release page to check new versions ?',
         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if response == QtWidgets.QMessageBox.Yes:
             relasePage = "https://github.com/TF-Chan-Lab/panGraphViewer/releases"
             webbrowser.open(relasePage)
 
-    def select_gfa(self): # load rGFA file
+    def select_gfa(self): # load GFA file
         self.ui.comboBoxChr.clear()
         self.ui.comboBoxSample.clear()
         self.ui.nodesComboBox.clear()
@@ -1063,9 +1043,9 @@ class Main(QMainWindow):
         else:
             self.gfa = QFileDialog.getOpenFileName(self, 'Select graphical fragment assembly', '','gfa (*gfa)')[0]
         self.gfa = os.path.abspath(self.gfa)
-        
+
         if checkFile(self.gfa) == -1:
-            QtWidgets.QMessageBox.question(self, 'Warning !', 'Something is wrong with the input rGFA file. Please check !',
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'Something is wrong with the input (r)GFA file. Please check !',
             QtWidgets.QMessageBox.Ok)
             self.ui.gfaPath.clear()
             self.gfa = None
@@ -1080,6 +1060,8 @@ class Main(QMainWindow):
         self.gfa = None
 
     def selectFasta(self):  # load GFA file
+        self.fasta = None 
+        self.ui.fastaPath.clear()
         if sys.platform == 'win32':
             fasta = QFileDialog.getOpenFileName(self, 'Select the backbone genome assembly', '',
                                                 'fasta(*fa *fasta *fna)')
@@ -1102,6 +1084,8 @@ class Main(QMainWindow):
         self.fasta = None
 
     def selectVCF(self):
+        self.vcf = None 
+        self.ui.vcfPath.clear()
         if sys.platform == 'win32':
             vcf = QFileDialog.getOpenFileName(self, 'Select the vcf file', '', 'vcf(*vcf)')
             self.vcf = codecs.decode(str(vcf)[1:-1].split(',')[0][1:-1], 'unicode_escape')
@@ -1121,26 +1105,28 @@ class Main(QMainWindow):
         self.vcf = None
 
     def outdirSelect(self):
-        self.outDir = QFileDialog.getExistingDirectory()
-        self.outDir = os.path.abspath(self.outDir)
-        if checkDir(self.outDir) == -1:
+        self.outDir1 = None 
+        self.ui.outDir.clear()
+        self.outDir1 = QFileDialog.getExistingDirectory()
+        self.outDir1 = os.path.abspath(self.outDir1)
+        if checkDir(self.outDir1) == -1:
             QtWidgets.QMessageBox.question(self, 'Warning !', 'Something is wrong with the outDir. Please check !',
             QtWidgets.QMessageBox.Ok)
             self.ui.outDir.clear()
-            self.outDirPath = None
+            self.outDir1 = None
         else:
-            self.ui.outDir.setText(self.outDir)
+            self.ui.outDir.setText(self.outDir1)
 
     def outdirClear(self):
         self.ui.outDir.clear()
-        self.outDir = None
+        self.outDir1 = None
 
     def checkVCFparseElem(self):                
         if self.vcf == None or len(self.vcf) == 0:
             QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select a VCF file',
             QtWidgets.QMessageBox.Ok)
             return -2
-        if self.outDir == None or len(self.outDir) == 0:
+        if self.outDir1 == None or len(self.outDir1) == 0:
             QtWidgets.QMessageBox.question(self, 'Warning !', 'Please specify an output directory',
             QtWidgets.QMessageBox.Ok)
             return -3
@@ -1191,9 +1177,9 @@ class Main(QMainWindow):
         path = os.path.join(toolPath, 'scripts')
         script = os.path.join(path, 'vcf2rGFA.py')
         if self.fastaMissing == 0:
-            cmd = f'"{sys.executable}" "{script}" -f "{self.fasta}" -v "{self.vcf}" -n "{self.threads}" -o "{self.outDir}" -b "{self.bb}"'
+            cmd = f'"{sys.executable}" "{script}" -f "{self.fasta}" -v "{self.vcf}" -n "{self.threads}" -o "{self.outDir1}" -b "{self.bb}"'
         else:
-            cmd = f'"{sys.executable}" "{script}" -v "{self.vcf}" -n "{self.threads}" -o "{self.outDir}" -b "{self.bb}"'
+            cmd = f'"{sys.executable}" "{script}" -v "{self.vcf}" -n "{self.threads}" -o "{self.outDir1}" -b "{self.bb}"'
             self.fastaMissing = 0
         if sys.platform == 'win32':
             self.retcode = subprocess.call(shlex.split(cmd), shell = True)      
@@ -1235,9 +1221,9 @@ class Main(QMainWindow):
         self.Date_vcf2 = datetime.datetime.today()
         Time_duration = (self.Date_vcf2 - self.Date_vcf1).total_seconds()
 
-        self.gfa = os.path.join(f"{self.outDir}", f"{self.bb}_vcf2rGFA.gfa")
-        self.run = PanGraph(f"{self.gfa}", f"{self.outDir}")
-
+        self.gfa1 = os.path.join(f"{self.outDir1}", f"{self.bb}_vcf2rGFA.gfa")
+        self.run = PanGraph(f"{self.gfa1}", f"{self.outDir1}")
+        self.allChrs = self.run.backbone['contigs']
         self.displayInfo()
         self.resetSample()
         self.ui.statusVCF.setStyleSheet('color: green')
@@ -1283,6 +1269,8 @@ class Main(QMainWindow):
         self.ui.ResetSamples.setEnabled(False)
 
     def outDir_select(self): # set the output directory
+        self.outDir = None 
+        self.ui.outDirPath.clear()
         self.outDir = QFileDialog.getExistingDirectory()
         self.outDir = os.path.abspath(self.outDir)
         
@@ -1300,14 +1288,20 @@ class Main(QMainWindow):
 
     def checkGFAmsg(self): # check if an rGFA file is loaded and pop out a dialog box
         if self.gfa == None or len(self.gfa) == 0:
-            QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select an rGFA file',
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select an rGFA or a GFA file',
             QtWidgets.QMessageBox.Ok)
             return -1
         else:
             return 0
 
     def checkOutDirPath(self): # check if the outDir is selected and pop out a dialog box
+        noGFApath, noVCFpath = False, False
         if self.outDir == None or len(self.outDir) == 0:
+            noGFApath = True
+        if self.outDir1 == None or len(self.outDir1) == 0:
+            noVCFpath = True
+
+        if noGFApath == True and noVCFpath == True:        
             QtWidgets.QMessageBox.question(self, 'Warning !', 'Please specify an output directory',
             QtWidgets.QMessageBox.Ok)
             return -1
@@ -1320,14 +1314,11 @@ class Main(QMainWindow):
         time_delta = (self.date_gfa2 - self.date_gfa1)
         total_seconds = time_delta.total_seconds()
         self.ui.status.setText('Finished in %.2fs ! ' % total_seconds)
+        self.allChrs = self.run.backbone['contigs']
         self.ui.VCFtab.setEnabled(True)
         self.displayInfo()
-        self.ui.startParseGFA.setEnabled(True)
-        self.ui.plotGraph.setEnabled(True)
-        self.ui.ParameterFrame.setEnabled(True)
-        self.ui.plotFrame.setEnabled(True)
-        self.ui.checkNodesFrame.setEnabled(True)
-        self.ui.checkGeneOvlpFrame.setEnabled(True)
+        self.enableFrames()
+        
         self.resetSample()
         if self.run.neededGFA == 1:
             QtWidgets.QMessageBox.question(self, 'Warning !', "The format of 'SN:Z' in the input rGRF file is not the one we want. Although we can display the graph, many features would not show. Please refer to the 'Manual' in Help if you want a better experience in using this tool.", QtWidgets.QMessageBox.Ok)
@@ -1342,19 +1333,87 @@ class Main(QMainWindow):
         self.ui.nodesComboBox.clear()
         self.ui.sampleComboBox.clear()
         self.date_gfa1 = datetime.datetime.today()
+        self.disableFrames()
+        self.ui.status.setStyleSheet('color: blue')
+        self.ui.status.setText('Parsing ...')        
+        self.disableParameters()
+        #self.run = panGraph(self.gfa, self.outDir)
+        self.run = PanGraph(self.gfa, self.outDir) 
+
+    def disableFrames(self):
         self.ui.startParseGFA.setEnabled(False)
         self.ui.startParseGFA.setEnabled(False)
         self.ui.ParameterFrame.setEnabled(False)
         self.ui.plotFrame.setEnabled(False)
         self.ui.checkNodesFrame.setEnabled(False)
         self.ui.checkGeneOvlpFrame.setEnabled(False)
-        self.ui.status.setStyleSheet('color: blue')
-        self.ui.status.setText('Parsing ...')        
-        self.disableParameters()
-        #self.run = panGraph(self.gfa, self.outDir)
-        self.run = PanGraph(self.gfa, self.outDir)
 
-    def beginParseGAF(self): # start to parse the rGFA file
+    def enableFrames(self):
+        self.ui.startParseGFA.setEnabled(True)
+        self.ui.startParseGFA.setEnabled(True)
+        self.ui.ParameterFrame.setEnabled(True)
+        self.ui.plotFrame.setEnabled(True)
+        self.ui.checkNodesFrame.setEnabled(True)
+        self.ui.checkGeneOvlpFrame.setEnabled(True)                 
+
+    def fmtCheckPrep(self):
+        path = os.path.join(toolPath, 'scripts')
+        script = os.path.join(path, 'gfa2rGFA.py')
+        file = os.path.split(self.gfa)[1]
+        converted = os.path.join(self.outDir, f'{os.path.splitext(file)[0]}_converted{os.path.splitext(file)[1]}')
+        cmd = f'"{sys.executable}" "{script}" -in_gfa "{self.gfa}" -out_rgfa "{converted}"'
+        if sys.platform == 'win32':
+            self.cvtcode = subprocess.call(shlex.split(cmd), shell = True)
+        else:
+            self.cvtcode = subprocess.call(shlex.split(cmd), shell = False)
+        
+        #print("The cvtcode is: '%s'" % self.cvtcode)
+
+        if self.cvtcode not in [4, 5, 6, 7]:
+            self.prepareGFAparse()
+
+    def fmtcvtDone(self):
+        try:
+            if self.cvtcode == 4: 
+                self.ui.status.setText('Crashed')
+                self.enableFrames()
+                QtWidgets.QMessageBox.question(self, 'Error!', 'Missing GFA field in the input file. Abort!',
+                QtWidgets.QMessageBox.Ok)    
+                return -2
+            if self.cvtcode == 5:  
+                self.ui.status.setText('Crashed')
+                self.enableFrames()
+                QtWidgets.QMessageBox.question(self, 'Error!', 'both seq and LN tag are missing in the input file. Abort!',
+                QtWidgets.QMessageBox.Ok) 
+                return -3 
+            if self.cvtcode == 6: 
+                self.ui.status.setText('Crashed')
+                self.enableFrames()
+                QtWidgets.QMessageBox.question(self, 'Error!', 'The file is in GFA v1, but error occurs during conversion. Abort!',
+                QtWidgets.QMessageBox.Ok)  
+                return -4
+            if self.cvtcode == 7:
+                self.ui.status.setText('Crashed')
+                self.enableFrames()
+                QtWidgets.QMessageBox.question(self, 'Error!', 'Path info is missing from the input GFA1 file, which is necessary for conversion. Abort!',
+                QtWidgets.QMessageBox.Ok) 
+                return -5
+            else:
+                self.ui.status.setText('Converted')  
+                file = os.path.split(self.gfa)[1]   
+                self.gfa = os.path.join(self.outDir, f'{os.path.splitext(file)[0]}_converted{os.path.splitext(file)[1]}') 
+                self.ui.gfaPath.setText(self.gfa)                          
+        except:
+            pass 
+               
+        self.run = PanGraph(f"{self.gfa}", f"{self.outDir}")
+        self.allChrs = self.run.backbone['contigs']
+        self.displayInfo()
+        self.resetSample()
+        self.completeGFAparse()
+
+
+    def BeginParseGAF(self): # start to parse the rGFA file
         if self.checkGFAmsg() == 0 and self.checkOutDirPath() == 0:
             self.ui.VCFtab.setEnabled(False)
             self.workerParseGFA = Worker(self.prepareGFAparse)
@@ -1362,9 +1421,35 @@ class Main(QMainWindow):
             self.workerParseGFA.signals.finished.connect(self.completeGFAparse)
             self.workerParseGFA.signals.progress.connect(self.showProgress)
 
+
+
+    def beginParseGAF(self): # start to parse the rGFA file
+        if self.checkGFAmsg() == 0 and self.checkOutDirPath() == 0:
+            #if self.formatCheck() != -1: 
+            run = GFA2rGFA(self.gfa, self.outDir)
+            if run.checkGfaFormat() == 1:
+                self.BeginParseGAF()
+            if run.checkGfaFormat() == 2:
+                rect = QtWidgets.QMessageBox.question(self, 'Warring!', 'The input file is in GFA1 format and we need to do some checking and conversion. This will take a while, do you want to continue?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if rect == QtWidgets.QMessageBox.Yes:
+                    self.ui.status.setStyleSheet('color: blue')
+                    self.ui.status.setText('Checking ...')
+                    self.ui.VCFtab.setEnabled(False)
+                    self.workerParseGFA = Worker(self.fmtCheckPrep)
+                    self.threadpool.start(self.workerParseGFA)
+                    self.workerParseGFA.signals.finished.connect(self.fmtcvtDone)
+                    self.workerParseGFA.signals.progress.connect(self.showProgress)
+            if run.checkGfaFormat() == 3:
+                self.ui.status.setText('Crashed')
+                QtWidgets.QMessageBox.question(self, 'Error!', 'The input file is in an unknown format. Abort!',
+                QtWidgets.QMessageBox.Ok)                 
+
     def displayInfo(self): # enable and show nodes
         self.enableParameters()
         self.ui.comboBoxSample.clear()
+        self.ui.sampleComboBox.clear()
+        self.lines = list()
         try:
             self.lines = [i for i in self.run.nameCols.keys()]
             self.backboneList = [self.run.backbone['name']]
@@ -1392,8 +1477,8 @@ class Main(QMainWindow):
         self.ui.comboBoxChr.clear()
         self.clearNodesList()
         self.chrs = list()
-
-        self.chrs = natsorted(self.run.backbone['contigs'])
+        
+        self.chrs = natsorted(self.allChrs)
         if '' not in self.chrs:
             self.chrs.insert(0, '')
         self.ui.comboBoxChr.addItems(self.chrs)
@@ -1442,6 +1527,7 @@ class Main(QMainWindow):
             if self.checkOutDirPath() != -1 and self.checkChr() != -1:
                 if self.checkStartEnd() != -1:
                     self.ui.plotGraph.setEnabled(False)
+                    self.ui.checkNodesInfo.setEnabled(False)
                     self.start = None if self.ui.startPosition.text() == '' else int(self.ui.startPosition.text())
                     self.end = None if self.ui.endPosition.text() == '' else int(self.ui.endPosition.text())
                     self.ui.plotStatusLabel.setStyleSheet('color: blue')
@@ -1468,13 +1554,18 @@ class Main(QMainWindow):
                 self.run.emptyGraphSignal = 0
                 return -1
             if self.run.overNodeLimitSignal == 1:
-                response = QtWidgets.QMessageBox.question(self, 'Warning !', f"The num. of nodes in the selected region is bigger than '{self.run.maxNodesDisplay}' in settings. We will plot a Cytoscape graph instead of a Vis graph to ensure a better visualization. Do you want to continue?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                subNodesCount = len(self.run.subNodes)
+                if subNodesCount > self.run.maxNodesLimit:
+                    response = QtWidgets.QMessageBox.question(self, 'Warning !', f"The num. of nodes in the selected region is '{subNodesCount}', which is bigger than the limit '{self.run.maxNodesLimit}' in settings. We are afraid that we may not be able to render such a large graph at the moment. Please modify Start/End Position to limit the number of nodes", QtWidgets.QMessageBox.Ok)
+                else:
+                    response = QtWidgets.QMessageBox.question(self, 'Warning !', f"The num. of nodes in the selected region is '{subNodesCount}', which is bigger than the max. num. of node setting '{self.run.maxNodesDisplay}' in a vis.js plot. We will plot a Cytoscape graph instead of a Vis graph to ensure a better visualization. Do you want to continue?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                 self.run.overNodeLimitSignal = 0
-                if response == QtWidgets.QMessageBox.No:
+                if response == QtWidgets.QMessageBox.No or response == QtWidgets.QMessageBox.Ok:
                     self.ui.plotStatusLabel.setStyleSheet('color: red')
                     self.ui.plotStatusLabel.setText('Cancelled')
                     self.ui.plotGraph.setEnabled(True)
+                    self.ui.checkNodesInfo.setEnabled(True)
                     return -2
             canvas = QtWebEngineWidgets.QWebEngineView()
             if self.start == None and self.end == None:
@@ -1507,6 +1598,7 @@ class Main(QMainWindow):
                 QtWidgets.QMessageBox.question(self, 'Warning !', 'Maximum recurison depth exceeded in the selected chromosomal region!',
                 QtWidgets.QMessageBox.Ok)
         self.ui.plotGraph.setEnabled(True)
+        self.ui.checkNodesInfo.setEnabled(True)
 
     def plotClean(self): # Clean the display canvas
         self.ui.plotStatusLabel.setStyleSheet('color: black')
@@ -1518,77 +1610,85 @@ class Main(QMainWindow):
         self.node = self.ui.nodesComboBox.currentText()
 
     def manualNodes(self): # manually input nodes
-        self.finalSelected = self.selectedNodes
+        tmpList=[]
         manualInput = self.ui.textEdit.toPlainText().split('\n')
         for i in manualInput:
             i = ''.join(i.split())
             if i !='' and not i.startswith("List") :
-                if i in self.nodes and i not in self.selectedNodes:
-                    self.finalSelected.append(i)
+                tmpList.append(i)
                 if i not in self.nodes:
                     QtWidgets.QMessageBox.question(self, 'Warning !', f"Illegal node ID: '{i}' in the list. Please check!",
                     QtWidgets.QMessageBox.Ok)
                     self.selectedNodes = []
                     return -1
-        self.selectedNodes = self.finalSelected
+        self.selectedNodes = tmpList
 
     def addNodes(self): # add a node to the NodeList
-        if self.manualNodes() != -1:
-            self.Node()
-            if self.node == None or self.node == '':
-                QtWidgets.QMessageBox.question(self, 'Warning !', 'No node is selected. Please Check!',
+        #if self.manualNodes() != -1:
+        self.Node()
+        if self.node == None or self.node == '':
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'No node is selected. Please Check!',
+            QtWidgets.QMessageBox.Ok)
+            return 
+        else:
+            if self.node in self.selectedNodes:
+                QtWidgets.QMessageBox.question(self, 'Warning !', 'The node selected is in the list. Please Check!',
                 QtWidgets.QMessageBox.Ok)
+                return 
             else:
-                if self.node in self.selectedNodes:
-                    QtWidgets.QMessageBox.question(self, 'Warning !', 'The node selected is in the list. Please Check!',
-                    QtWidgets.QMessageBox.Ok)
-                else:
-                    info = ''
-                    self.selectedNodes.append(self.node)
-                    if self.manualNodes() != -1:
-                        for i in self.selectedNodes:
-                            if info != '':
-                                info = info + '\n'+ i
-                            else:
-                                info = i
-                        self.ui.textEdit.setPlainText("%s" % info)
-                    return 0
+                info = ''
+                self.selectedNodes.append(self.node)
+                #if self.manualNodes() != -1:
+                for i in self.selectedNodes:
+                    if info != '':
+                        info = info + '\n'+ i
+                    else:
+                        info = i
+                self.ui.textEdit.setPlainText("%s" % info)
+                #else:  
+                #    return 
 
     def removeNode(self): # remove a node in the NodeList
         if self.selectedNodes == list():
             QtWidgets.QMessageBox.question(self, 'Warning !', 'There is no node selected/input in this list!',
             QtWidgets.QMessageBox.Ok)
+            return 
         else:
             self.Node()
             if self.node not in self.selectedNodes:
                 QtWidgets.QMessageBox.question(self, 'Warning !', f"No node: '{self.node}' in the list to be removed. Please check!",
                 QtWidgets.QMessageBox.Ok)
+                return 
             else:
-                if self.manualNodes() != -1:
-                    info = ''
-                    tmp = [i for i in self.selectedNodes if i != self.node]
-                    self.selectedNodes = tmp
-                    for i in self.selectedNodes:
-                        if info != '':
-                            info = info + '\n'+ i
-                        else:
-                            info = i
-                    self.ui.textEdit.setPlainText(f'{info}')
+                #if self.manualNodes() != -1:
+                info = ''
+                tmp = [i for i in self.selectedNodes if i != self.node]
+                self.selectedNodes = tmp
+                for i in self.selectedNodes:
+                    if info != '':
+                        info = info + '\n'+ i
+                    else:
+                        info = i
+                self.ui.textEdit.setPlainText(f'{info}')
+                #else:
+                #    return 
 
     def clearNodesList(self): # empty the NodeList
         self.selectedNodes = list()
         self.ui.textEdit.setPlainText("List of the selected node(s)")
 
     def getNodesInfo(self): # dialog box to show if a node in the NodeList
-        if self.selectedNodes == list() or self.selectedNodes == '':
-            QtWidgets.QMessageBox.question(self, 'Warning !', 'There is no node selected/input in this list!',
-            QtWidgets.QMessageBox.Ok)
-            return -1
         if self.manualNodes() != -1:
             if self.backbone == None or self.backbone == '':
                 QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select a backbone sample in the basic settings first!',
                 QtWidgets.QMessageBox.Ok)
-                return -2   
+                return -1   
+        else:
+            return -2
+        if self.selectedNodes == list() or self.selectedNodes == '':
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'There is no node selected/input in this list!',
+            QtWidgets.QMessageBox.Ok)
+            return -3
         self.ui.nodeStatus.setStyleSheet('color: blue')
         self.ui.nodeStatus.setText('Running ...')
         self.date_node1 = datetime.datetime.today()               
@@ -1699,17 +1799,17 @@ class Main(QMainWindow):
         self.ui.textEdit_2.setPlainText(f'{samples}')
         self.leftSamples = self.lines
 
-    def select_bed(self): # select a bed file
+    def select_bed(self): # select a bed/gff/gtf file
         self.ui.geneComboBox.clear()
         if sys.platform == 'win32':
-            bed = QFileDialog.getOpenFileName(self, 'Select a bed file', '','bed (*bed)')
+            bed = QFileDialog.getOpenFileName(self, 'Select an annotation file', '','annotation (*bed *gtf *gff3)')
             self.bed = codecs.decode(str(bed)[1:-1].split(',')[0][1:-1],'unicode_escape')
         else:
-            self.bed = QFileDialog.getOpenFileName(self, 'Select a bed file', '','bed (*bed)')[0]
+            self.bed = QFileDialog.getOpenFileName(self, 'Select an annoation file', '','annoation (*bed *gtf *gff3)')[0]
         self.bed = os.path.abspath(self.bed)
     
         if checkFile(self.bed) == -1:
-            QtWidgets.QMessageBox.question(self, 'Warning !', 'Something is wrong with the input BED file. Please check !',
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'Something is wrong with the input annotation file. Please check !',
             QtWidgets.QMessageBox.Ok)
             self.ui.bedPath.clear()
             self.bed = None
@@ -1725,7 +1825,7 @@ class Main(QMainWindow):
 
     def checkBed(self):
         if self.bed == None or len(self.bed) == 0:
-            QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select a BED file',
+            QtWidgets.QMessageBox.question(self, 'Warning !', 'Please select an annotation file',
             QtWidgets.QMessageBox.Ok)
             return -1
         return 0
@@ -1734,21 +1834,23 @@ class Main(QMainWindow):
         self.ui.bedParseStatus.setStyleSheet('color: blue')
         self.ui.bedParseStatus.setText('Running ...')
         self.date_bed1 = datetime.datetime.today()
-        self.run.loadBed(self.bed)
-        threshold = self.run.getGeneNodeOverlapThreadhold()
+        self.run.loadBedGff(self.bed)
+        self.threshold = self.run.getGeneNodeOverlapThreadhold()
         self.run.loadRGFA()
         self.run.genGraph()
         self.run.updateNodes()
         self.genes = list()
-        genes = self.run.nodeGeneOverlap(self.bed, threshold)
+        genes = self.run.nodeGeneOverlap(self.bed, self.threshold)
         if len(genes) == 0:
-            QtWidgets.QMessageBox.question(self, 'Warning !', f"No gene found overlapping with at least '{threshold}' nodes !",
-            QtWidgets.QMessageBox.Ok)
+            self.bedErr=1
+            logging.error(f"No gene found overlapping with at least '{self.threshold}' nodes !")
+            #QtWidgets.QMessageBox.question(self, 'Warning !', f"No gene found overlapping with at least '{threshold}' nodes !",
+            #QtWidgets.QMessageBox.Ok)
         else:
             now = datetime.datetime.now()
             geneFile = os.path.join(self.outDir, f'{now.strftime("%Y-%m-%d-%H_%M_%S")}.geneList.txt')
             with open(geneFile, 'w') as f:
-                for i in genes.keys():
+                for i in sorted(genes.keys()):
                     self.genes.append(i)
                     f.write('%s\n' % i)
             if '' not in self.genes:
@@ -1761,7 +1863,15 @@ class Main(QMainWindow):
         total_seconds = time_delta.total_seconds()
         self.ui.bedParseStatus.setStyleSheet('color: green')
         self.ui.bedParseStatus.setText('Finished in %.2fs !' % total_seconds)
-    
+        try: 
+            if self.bedErr == 1:
+                self.bedErr = 0
+                self.ui.geneComboBox.clear()
+                QtWidgets.QMessageBox.question(self, 'Warning !', f"No gene found overlapping with at least '{self.threshold}' nodes !",
+                QtWidgets.QMessageBox.Ok)
+        except AttributeError:
+            pass
+
     def parsBedWorker(self):
         if self.checkBed() == 0:
             self.workerParseBed = Worker(self.parseBed)
@@ -1794,7 +1904,7 @@ class Main(QMainWindow):
 
     def completePlottingOverlap(self):
         if self.bedError == 1:
-            QtWidgets.QMessageBox.question(self, 'Error !', 'Please check if the BED file is the correct one.',
+            QtWidgets.QMessageBox.question(self, 'Error !', 'Please check if the annotation file is the correct one.',
             QtWidgets.QMessageBox.Ok)
             self.ui.bedParseStatus.setStyleSheet('color: red')
             self.ui.bedParseStatus.setText('Plotting crashed !') 
@@ -1823,6 +1933,17 @@ class Main(QMainWindow):
         canvas.load(QtCore.QUrl().fromLocalFile(html))
         canvas.show()
         sleep(1)
+
+        canvas = QtWebEngineWidgets.QWebEngineView()
+        chr = self.run.bed[self.gene]['Chr']
+        start = self.run.bed[self.gene]['Start']
+        end = self.run.bed[self.gene]['End']
+        i = self.ui.vizCanvas.addTab(canvas,f"Subgraph within the region of Gene: {self.gene}")
+        self.ui.vizCanvas.setCurrentIndex(i)
+        self.run.drawGraph(self.leftSamples, chr, start, end)
+        html = self.run.drawGraphResult['outHtml']
+        canvas.load(QtCore.QUrl().fromLocalFile(html))
+        canvas.show()
 
     def plotOverlapWorker(self):
         if self.checkplotOverlapCondition() == 0:

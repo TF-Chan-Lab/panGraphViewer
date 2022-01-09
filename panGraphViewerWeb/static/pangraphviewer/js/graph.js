@@ -10,22 +10,22 @@ const parse_vcf_url = document.getElementById('parse_vcf_url').value
 const parse_bed_url = document.getElementById('parse_bed_url').value
 const getdata_url = document.getElementById('getdata_url').value
 var sample_list = '';
+var gene_info;
 
-$( "#input-form" ).submit(function( event ) {
-    event.preventDefault();
-
+function gen_graph(chr, start, end, tabHeader) {
     var url = getdata_url;
     var input_type = document.getElementById('input_type').value;
     var gfa = document.getElementById('gfa_path').value;
     var vcf = document.getElementById('vcf_path').value;
     var fasta = document.getElementById('fasta_path').value;
     var backbone = document.getElementById('backbone').value;
-    var chr = document.getElementById('chr').value;
-    var start = document.getElementById('start').value;
-    var end = document.getElementById('end').value;
+    if (!chr) chr = document.getElementById('chr').value;
+    if (!start) start = document.getElementById('start').value;
+    if (!end) end = document.getElementById('end').value;
 
-    if (input_type == 'vcf' && !fasta) {
-        if (!confirm('While a fasta file is missing, we can still generate a graph. However, node sequence checking will not be available. Do you want to continue ?')) {
+    if (input_type == 'vcf') {
+        str = 'While a fasta file is missing, we can still generate a graph. However, node sequence checking will not be available. Do you want to continue ?';
+        if (!fasta && !confirm(str)) {
             update_alert_box('Plotting by VCF is cancelled', 'alert-info');
             return;
         }
@@ -33,11 +33,13 @@ $( "#input-form" ).submit(function( event ) {
 
     start_str = start;
     end_str = end;
-    if (start_str == '' && end_str == '') title = `${chr}`
+    if (!start_str && !end_str) title = `${chr}`
     else {
-        if (start_str == '') start_str = '1';
+        if (!start_str) start_str = '1';
         title = `${chr}: ${start_str} - ${end_str}`
     }
+
+    if (!tabHeader) tabHeader = title;
 
     update_alert_box('Generating data ...', 'alert-info')
 
@@ -50,11 +52,20 @@ $( "#input-form" ).submit(function( event ) {
         data: data,
         dataType: 'json',
         success: function(result) {
+            if (result.error) {
+                alert(result.error);
+                update_alert_box(result.error, 'alert-danger')
+                return;
+            }
+            if (result.warning) {
+                alert(result.warning);
+            }
             update_alert_box('Generation done', 'alert-success')
 
             cyData = result.cyData;
+            legend = result.legend;
             result_gfa = result.gfa
-            addOutputTab(title, cyData, result_gfa);
+            addOutputTab(title, cyData, result_gfa, legend, tabHeader);
         },
         error: function(response) {
             obj = response.responseJSON;
@@ -63,6 +74,12 @@ $( "#input-form" ).submit(function( event ) {
             update_alert_box(str, 'alert-danger')
         }
     });
+}
+
+$( "#input-form" ).submit(function( event ) {
+    event.preventDefault();
+
+    gen_graph();
 });
 
 $('#parse-btn').click(function() {
@@ -71,7 +88,7 @@ $('#parse-btn').click(function() {
     var gfa = document.getElementById('gfa_path').value;
 
     if (!gfa) {
-        update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger')
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
         document.getElementById('gfa_path').focus();
         return;
     }
@@ -124,11 +141,14 @@ $('#parse-btn').click(function() {
             $("#bed_path").trigger('change');
         },
         error: function(result) {
+            /*
             $("#backbone").prop('disabled', true);
             $("#chr").prop('disabled', true);
             $("#start").prop('disabled', true);
             $("#end").prop('disabled', true);
             $("#plot-btn").prop('disabled', true);
+            */
+            control_plot_input('gfa', 'reset');
 
             update_alert_box('Parsing failed', 'alert-danger')
         }
@@ -143,13 +163,13 @@ $('#plot-gene-btn').click(function() {
     var gene = document.getElementById('gene').value;
 
     if (!gfa) {
-        update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger');
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger');
         document.getElementById('gfa_path').focus();
         return;
     }
 
     if (!bed) {
-        update_alert_box('Please select uploaded BED file, or upload new local BED file', 'alert-danger');
+        update_alert_box('Please select uploaded BED/GTF/GFF file, or upload new local BED/GTF/GFF file', 'alert-danger');
         document.getElementById('bed_path').focus();
         return;
     }
@@ -200,10 +220,14 @@ $('#parse-vcf-btn').click(function() {
             $('#start').val('');
             $('#end').val('');
 
-            if (result.warning) update_alert_box(result.warning, 'alert-info')
-            else if (result.error) {
+            if (result.error) {
+                alert(result.error);
                 update_alert_box(result.error, 'alert-danger')
-                return
+                control_plot_input('vcf', 'reset');
+                return;
+            } else if (result.warning) {
+                alert(result.warning);
+                update_alert_box(result.warning, 'alert-info')
             } else {
                 update_alert_box('Parsing done', 'alert-success')
             }
@@ -234,11 +258,14 @@ $('#parse-vcf-btn').click(function() {
             $("#plot :input").prop('disabled', false)
         },
         error: function(result) {
+            /*
             $("#backbone").prop('disabled', true);
             $("#chr").prop('disabled', true);
             $("#start").prop('disabled', true);
             $("#end").prop('disabled', true);
             $("#plot-btn").prop('disabled', true);
+            */
+            control_plot_input('vcf', 'reset');
 
             update_alert_box('Parsing failed', 'alert-danger')
         }
@@ -252,7 +279,7 @@ $('#parse-bed-btn').click(function() {
     var bed = document.getElementById('bed_path').value;
 
     if (!gfa) {
-        update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger');
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger');
         document.getElementById('gfa_path').focus();
         return;
     }
@@ -277,6 +304,7 @@ $('#parse-bed-btn').click(function() {
         success: function(result) {
             gene_obj = $('#gene').find('option:not(:first)').remove();
             gene_list = result.gene;
+            gene_info = result.gene_info;
 
             if (result.error) {
                 update_alert_box(result.error, 'alert-danger');
@@ -331,11 +359,28 @@ function view_sequence(ids, gfa_path) {
 }
 
 function drawGraph2(loadStatusId, cyId, cyData) {
+
+    function makePopper(ele) {
+        let ref = ele.popperRef();
+
+        ele.tippy = tippy(ref, {
+            content: () => {
+                let content = document.createElement('div');
+
+                content.innerHTML = ele.data('title');
+
+                return content;
+            },
+            trigger: 'manual'
+        });
+    }
+
     var cy = window.cy = cytoscape({
         container: document.getElementById(cyId),
 
         layout: {
-            name: 'euler',
+            //name: 'euler',
+            name: 'fcose',
             randomize: true,
             animate: false,
 
@@ -395,31 +440,6 @@ function drawGraph2(loadStatusId, cyId, cyData) {
         ],
 
         elements: cyData
-    });
-
-    cy.on('mouseover', 'node', function(event) {
-        $(".qtip").remove();
-        this.qtip({
-            content: this.data('title'),
-            position: {
-                my: 'top center',
-                at: 'bottom center'
-            },
-            style: {
-                classes: 'qtip-bootstrap',
-                tip: {
-                   width: 16,
-                   height: 8
-                }
-            },
-            show: {
-                event: event.type,
-                ready: true
-            },
-            hide: {
-                event: 'mouseout unfocus'
-            }
-        });
     });
 
     cy.contextMenus({
@@ -492,6 +512,18 @@ function drawGraph2(loadStatusId, cyId, cyData) {
         },
       ]
     });
+
+    cy.ready(function() {
+        cy.elements().forEach(function(ele) {
+            makePopper(ele);
+        });
+    });
+
+    cy.nodes().unbind('mouseover');
+    cy.nodes().bind('mouseover', (event) => event.target.tippy.show());
+
+    cy.nodes().unbind('mouseout');
+    cy.nodes().bind('mouseout', (event) => event.target.tippy.hide());
 }
 
 var gId=1;
@@ -500,7 +532,7 @@ function getId() {
     return gId++;
 }
 
-function addOutputTab(title, cyData, gfa) {
+function addOutputTab(title, cyData, gfa, legend, tabHeader) {
     id = getId();
     tabId = 'tab' + id;
     tabContentId = 'tabContent' + id;
@@ -510,8 +542,10 @@ function addOutputTab(title, cyData, gfa) {
     gfaPathId = 'gfa_path' + id;
     captureBtnId = 'captureBtnId' + id;
 
+    if (!tabHeader) tabHeader = title;
+
     closeBtnStr = `<button type="button" class="close" aria-label="Close" id="${closeBtnId}"><span aria-hidden="true">&times;</span></button>`
-    nodeStr = `<li class="nav-item"><a class="nav-link" id="${tabId}" data-toggle="tab" href="#${tabContentId}" role="tab" aria-controls="home" aria-selected="true">${title}&nbsp;${closeBtnStr}</a></li>`
+    nodeStr = `<li class="nav-item"><a class="nav-link" id="${tabId}" data-toggle="tab" href="#${tabContentId}" role="tab" aria-controls="home" aria-selected="true">${tabHeader}&nbsp;${closeBtnStr}</a></li>`
     $('#myTab').children(':first').after(nodeStr);
     //$('#myTab').append(nodeStr);
 
@@ -525,7 +559,9 @@ function addOutputTab(title, cyData, gfa) {
     });
 
     captureBtnStr = `<button type="button" class="btn btn-default capture_btn" id="${captureBtnId}" onclick="capture_cy(${id})"><i class="fas fa-camera" aria-hidden="true"></i></button>`
-    body = `<center><h1>${title}${captureBtnStr}</h1></center><div class="cy" id="${cyId}"></div><input type=hidden id="${loadStatusId}" value="-1">`
+    legendStr = `<div class="myDIV">Legend (mouseover here to show)</div>`
+    legendStr += `<div class="hide"><table><tr><td style="display: table-cell;vertical-align: top"><div id='colorTable${id}'></div></td><td style="display: table-cell;vertical-align: top"><div id='shapeTable${id}'></div></td></tr></table></div>`
+    body = `<center><h1>${title}${captureBtnStr}</h1>${legendStr}</center><div class="cy" id="${cyId}"></div><input type=hidden id="${loadStatusId}" value="-1">`
     body += `<input type=hidden id="${gfaPathId}" value="${gfa}">`
 
     tab = `<div class="tab-pane fade show" id="${tabContentId}" role="tabpanel" aria-labelledby="${tabId}">${body}</div>`;
@@ -533,6 +569,7 @@ function addOutputTab(title, cyData, gfa) {
 
     $(`#loading`).show();
     $(`#${tabId}`).tab('show');
+    add_legend(id, legend);
 
     $(`#${tabId}`).on('shown.bs.tab', function (e) {
        loadStatus = $('#' + loadStatusId).val();
@@ -551,13 +588,17 @@ function addOutputTab(title, cyData, gfa) {
 function upload_add_listener_change(prefix) {
     upload = document.getElementById(prefix+'_upload')
     upload.onchange = function(e) {
-        var prefix = e.target.id.split('_')[0]
+        var file_type = e.target.id.split('_')[0]
         var file_data = e.target.files[0]
 
+        var prefix = file_type;
         var fd = new FormData()
         fd.append('csrfmiddlewaretoken', csrf[0].value)
         fd.append('image', file_data)
         fd.append('file_type', prefix)
+
+        if (file_type == 'gfa') $('#parse-btn').prop('disabled', true);
+        else if (file_type == 'vcf') $('#parse-vcf-btn').prop('disabled', true);
 
         $.ajax({
             type:'POST',
@@ -573,18 +614,43 @@ function upload_add_listener_change(prefix) {
                     if (e.lengthComputable) {
                         const percent = e.loaded / e.total * 100
                         update_alert_box(`Upload status: ${percent.toFixed(1)}%`, 'alert-info')
+                        if (percent == 100) {
+                            update_alert_box(`Upload done. Processing ...`, 'alert-info')
+                        }
                     }
                 })
                 return xhr
             },
             success: function(response){
+                if (response.error) {
+                    alert(response.error);
+                    update_alert_box(response.error, 'alert-danger');
+
+                    if (file_type == 'gfa') control_plot_input('gfa', 'reset');
+                    else if (file_type == 'vcf') control_plot_input('vcf', 'reset');
+
+                    return;
+                } else if (response.warning) {
+                    alert(response.warning);
+                    update_alert_box(response.warning, 'alert-info');
+                } else if (!response.filepath) {
+                    update_alert_box('Ups... something went wrong', 'alert-danger');
+                    return;
+                }
+
                 update_alert_box('Successfully uploaded the file below', 'alert-success')
                 var idx = response['filepath'].lastIndexOf("/") + 1;
                 var filename = response['filepath'].substr(idx);
                 refresh_uploaded_list(`${prefix}_path`,prefix,filename);
+
+                if (file_type == 'gfa') $('#parse-btn').prop('disabled', false);
+                else if (file_type == 'vcf') $('#parse-vcf-btn').prop('disabled', false);
             },
             error: function(error){
-                console.log('error', error)
+                //console.log('error', error)
+                if (file_type == 'gfa') control_plot_input('gfa', 'reset');
+                else if (file_type == 'vcf') control_plot_input('vcf', 'reset');
+
                 update_alert_box('Ups... something went wrong', 'alert-danger')
             },
             cache: false,
@@ -620,13 +686,18 @@ function refresh_uploaded_list(dropdown_id, file_type, selected_value) {
         url: get_uploaded_list_url,
         data: post_data,
         success: function(result) {
+            var msg;
             dropdown_obj = $(`#${dropdown_id}`).find('option:not(:first)').remove();
             $.each(result.files, function(index, value) {
                 if (value == selected_value) selected = 'selected'; else selected = '';
                 dropdown_obj.end().append(`<option value="${value}" ${selected}>${value}</option>`);
             });
             $(`#${dropdown_id}`).trigger('change');
-            update_alert_box(`${file_type.toUpperCase()} uploaded file list updated`, 'alert-success');
+
+            if (file_type == 'bed') msg = `BED/GTF/GFF uploaded file list updated`;
+            else msg = `${file_type.toUpperCase()} uploaded file list updated`;
+
+            update_alert_box(msg, 'alert-success');
         },
         error: function(result) {
             update_alert_box(`Error in getting ${file_type.toUpperCase()} uploaded file list`, 'alert-danger');
@@ -650,7 +721,7 @@ function delete_uploaded(dropdown_id, file_type) {
     manage_file(action, file_name, file_type);
 }
 
-function control_plot_input(action) {
+function control_plot_input(file_type, action) {
     if (action=='reset') {
         dropdownlist_ids = ['backbone','chr']
         $.each(dropdownlist_ids, function(index, value) {
@@ -667,8 +738,8 @@ function control_plot_input(action) {
             $(`#${value}`).prop('disabled', true);
         });
     }
-    val = $('#gfa_path').val()
-    update_related_control('gfa',val);
+    val = $(`#${file_type}_path`).val()
+    update_related_control(file_type,val);
 }
 
 $('#rgfa_tab').on('shown.bs.tab', function (e) {
@@ -737,8 +808,11 @@ function manage_file(action, file_name, file_type, select_id) {
 }
 
 function plot_gene(gfa, bed, gene_id) {
+   chr = gene_info[gene_id]['gene_chr'];
+   start = gene_info[gene_id]['gene_start'];
+   end = gene_info[gene_id]['gene_end'];
+   gen_graph(chr, start, end, `Subgraph within the region of Gene: ${gene_id}`);
    url = `draw_overlap_gene?gfa=${gfa}&bed=${bed}&gene_id=${gene_id}`
-   console.log('url', url)
    window.open(url);
 }
 
@@ -748,7 +822,7 @@ $('#extract_node_view_btn').click(function () {
   var checked_ids = $('#extract_node_checked_node_id').val();
 
   if (!gfa) {
-    update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger')
+    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
     document.getElementById('gfa_path').focus();
     return;
   }
@@ -772,7 +846,7 @@ $('#extract_node_download_btn').click(function () {
   var checked_ids = $('#extract_node_checked_node_id').val();
 
   if (!gfa) {
-    update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger')
+    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
     document.getElementById('gfa_path').focus();
     return;
   }
@@ -826,7 +900,7 @@ $('#extract_node_check_btn').click(function () {
   var input_ids = $('#extract_node_node_id').val();
 
   if (!gfa) {
-    update_alert_box('Please select uploaded GFA file, or upload new local GFA file', 'alert-danger')
+    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
     document.getElementById('gfa_path').focus();
     return;
   }
@@ -841,17 +915,23 @@ $('#extract_node_check_btn').click(function () {
 });
 
 function update_related_control(update_type, update_value) {
-  if (update_type == 'gfa') {
+  if (update_type == 'gfa' || update_type == 'vcf') {
     if (update_value == '') {
       // disable tabs
       $("#tab-action a").addClass('disabled')
       $("#tab-action a").removeClass('active')
+
       // disable inputs in tab-content
       $("#tab-content-action :input").prop('disabled', true)
+
+      // disable buttons
+      if (update_type == 'gfa') $('#parse-btn').prop('disabled', true);
+      else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', true);
     }
     else {
       // enable buttons
-      $('#parse-btn').prop('disabled', false);
+      if (update_type == 'gfa') $('#parse-btn').prop('disabled', false);
+      else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', false);
     }
   }
 }
@@ -864,6 +944,24 @@ function capture_cy(id) {
     link.href = canvas.toDataURL()
     link.click();
   });
+}
+
+function add_legend(id, data) {
+    var $table = $('<table/>');
+    $.each(data['colors'], function(key, value) {
+        $table.append( '<tr><td bgcolor="' + value + '">' + key + '</td></tr>' );
+    });
+    if (data['has_reversed']) {
+        $table.append( '<tr><td style="display: table-cell">(*) nodes with seq<br>in rev-comp of orig</td></tr>' );
+    }
+    $('#colorTable' + id).append($table);
+
+    var $table = $('<table/>');
+    $.each(data['shapes'], function(key, value) {
+        var url = '/static/images/cy/' + value + '.png';
+        $table.append( '<tr><td><img src="' + url + '" width="20"></td><td>' + key + '</td></tr>' );
+    });
+    $('#shapeTable' + id).append($table);
 }
 
 upload_add_listener_change('gfa');

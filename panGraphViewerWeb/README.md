@@ -30,18 +30,18 @@ run.bat
 
 ---
 
-And then, you can type ``http://localhost:8000`` or ``http://<IPaddress>:8000`` in your browser to use ``panGraphViewer``
+And then, you may type ``http://localhost:8000`` or ``http://<IPaddress>:8000`` in your browser to use ``panGraphViewer``
 
 The default demo login info:
 ```
-Account: demo
+Account:  demo
 password: demodemo
 ```
 
 You can also manage the accounts by using admin account at admin address:
 ```
-Address: http://localhost:8000/admin
-Account: admin
+Address:  http://localhost:8000/admin
+Account:  admin
 password: abcd1234
 ```
 
@@ -65,20 +65,20 @@ build_docker.bat
 run_docker.bat
 ```
 
-When running run_docker.*, you will see the published port number at the end of execution. Then you can use your browser to access the address ```localhost:<PortNumber>``` or  ```<IPaddress>:<PortNumber>```.
+When running run_docker.\*, you will see the published port number at the end of execution. Then you can use your browser to access the address ```localhost:<PortNumber>``` or  ```<IPaddress>:<PortNumber>```.
 E.g. if the published port number is 32793, then you can type in the address ``http://localhost:32793``
 
 
 The default demo login info:
 ```
-Account: demo
+Account:  demo
 password: demodemo
 ```
 
 You can also manage the accounts by using admin account at admin address:
 ```
-Address: http://<IPaddress>:<PortNumber>/admin
-Account: admin
+Address:  http://<IPaddress>:<PortNumber>/admin
+Account:  admin
 password: abcd1234
 ```
 

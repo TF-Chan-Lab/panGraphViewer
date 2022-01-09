@@ -4,17 +4,15 @@
 
 {% load static %}
 
-<!--
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
--->
-<script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+<script src="{% static 'fontawesome_free/js/all.min.js' %}"></script>
 
 <style>
     .cy {
         position: absolute;
         left: 100;
         //top: 150;
-        top: 170;
+        //top: 170;
+        top: 200;
         bottom: 100;
         right: 300;
         z-index: 999;
@@ -50,21 +48,37 @@
     .nav-tabs {
         margin-bottom: 0;
     }
+
+    .hide {
+        display: none;
+    }
+
+    .myDIV:hover + .hide {
+        display: block;
+        color: red;
+    }
 </style>
 
-<div id="loading" style="display:none"><img id="loading-image" src="/static/images/loader.gif" alt="Loading..." width="150" height="150" /></div>
-
-<link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.css">
-<script src="http://cdnjs.cloudflare.com/ajax/libs/qtip2/2.2.0/jquery.qtip.js"></script>
+<div id="loading" style="display:none"><img id="loading-image" src="{% static 'images/loader.gif' %}" alt="Loading..." width="150" height="150" /></div>
 
 <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-<script src="/static/pangraphviewer/js/cytoscape-euler.js"></script>
-<script src="/static/pangraphviewer/js/cytoscape-qtip.js"></script>
 
-<script src="/static/pangraphviewer/js/cytoscape-context-menus.js"></script>
-<link rel="stylesheet" type="text/css" href="/static/pangraphviewer/css/cytoscape-context-menus.css">
+<script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@1.0.4/cytoscape-popper.min.js"></script>
+<script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@4.0.1/index.css" />
+
+<script src="https://unpkg.com/layout-base/layout-base.js"></script>
+<script src="https://unpkg.com/cose-base/cose-base.js"></script>
+<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+
+<script src="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.js"></script>
+<link href="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.css" rel="stylesheet" type="text/css" />
 
 <script src={% static 'pangraphviewer/js/graph.js' %} defer></script>
+<!--
+<script src={% static 'pangraphviewer/js/images.js' %} defer></script>
+-->
 
 <ul class="nav nav-tabs" id="myTab" role="tablist">
   <li class="nav-item">
@@ -91,7 +105,7 @@
 
     <ul class="nav nav-pills">
       <li class="nav-item">
-        <a class="nav-link active" id="rgfa_tab" data-toggle="pill" href="#rgfa">rGFA</a>
+        <a class="nav-link active" id="rgfa_tab" data-toggle="pill" href="#rgfa">(r)GFA</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" id="vcf_tab" data-toggle="pill" href="#vcf">VCF</a>
@@ -101,17 +115,17 @@
     <div class="tab-content">
       <div class="tab-pane tab-pane2 container active" id="rgfa">
         <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Uploaded rGFA file (*)</label>
+          <label class="col-sm-2 col-form-label">Uploaded (r)GFA file (*)</label>
           <div class="col-sm-10">
             <div class="form-row">
               <div class="col-sm-4">
-                <select class="form-control" id='gfa_path' placeholder="rGFA" onchange="control_plot_input('reset')">
-                  <option value=''>Select uploaded rGFA</option>
+                <select class="form-control" id='gfa_path' placeholder="rGFA" onchange="control_plot_input('gfa','reset')">
+                  <option value=''>Select uploaded (r)GFA</option>
                 </select>
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('gfa_path','gfa')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('gfa_path','gfa')">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -125,7 +139,7 @@
                 </button>
               </div>
               <div class="col-sm-2">
-                <button type=button id="parse-btn" class="btn btn-primary btn-block">Parse GFA</button>
+                <button type=button id="parse-btn" class="btn btn-primary btn-block" disabled>Parse GFA</button>
               </div>
             </div>
           </div>
@@ -149,13 +163,13 @@
           <div class="col-sm-10">
             <div class="form-row">
               <div class="col-sm-4">
-                <select class="form-control" id='vcf_path' placeholder="vcf" onchange="control_plot_input('reset')">
+                <select class="form-control" id='vcf_path' placeholder="vcf" onchange="control_plot_input('vcf','reset')">
                   <option value=''>Select uploaded VCF</option>
                 </select>
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('vcf_path','vcf')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('vcf_path','vcf')">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -170,7 +184,7 @@
               </div>
 
               <div class="col-sm-2">
-                <button id="parse-vcf-btn" class="btn btn-primary btn-block">Parse VCF</button>
+                <button id="parse-vcf-btn" class="btn btn-primary btn-block" disabled>Parse VCF</button>
               </div>
             </div>
           </div>
@@ -187,7 +201,7 @@
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('fasta_path','fasta')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('fasta_path','fasta')"">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -212,13 +226,13 @@
     <br>
     <ul class="nav nav-pills" id="tab-action">
       <li class="nav-item">
-        <a class="nav-link disabled" id="plot_tab" data-toggle="pill" href="#plot">Plot pangenome</a>
+        <a class="nav-link disabled" id="plot_tab" data-toggle="pill" href="#plot">Plot pangenome (sub)graph</a>
       </li>
       <li class="nav-item">
         <a class="nav-link disabled" id="extract_node_tab" data-toggle="pill" href="#extract_node">Extract nodes</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link disabled" id="overlap_gene_tab" data-toggle="pill" href="#overlap_gene">Plot overlap genes</a>
+        <a class="nav-link disabled" id="overlap_gene_tab" data-toggle="pill" href="#overlap_gene">Plot nodes falling in a gene region</a>
       </li>
     </ul>
 
@@ -291,18 +305,18 @@
   </div>
   <div class="tab-pane tab-pane2 container" id="overlap_gene">
         <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Uploaded bed file (*)</label>
+          <label class="col-sm-2 col-form-label">Uploaded BED/GTF/GFF file (*)</label>
           <div class="col-sm-10">
 
             <div class="form-row">
               <div class="col-sm-4">
                 <select class="form-control" id='bed_path' placeholder="bed" onchange="bed_path_onchange()">
-                  <option value=''>Select uploaded bed</option>
+                  <option value=''>Select uploaded BED/GTF/GFF</option>
                 </select>
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('bed_path','bed')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('bed_path','bed')">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -312,7 +326,7 @@
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align">
                   <i class="fa fa-upload" aria-hidden="true" id="bed_upload_icon" onclick="$('#bed_upload').trigger('click')"></i>
-                  <input type="file" name="bed_upload" id="bed_upload" accept=".bed" style="height:1px;width:1px;visibility:hidden;">
+                  <input type="file" name="bed_upload" id="bed_upload" accept=".bed,.gtf,.gff,.gff3" style="height:1px;width:1px;visibility:hidden;">
                 </button>
               </div>
               <div class="col-sm-2">
@@ -361,7 +375,7 @@
       <div class="row">
         <div class="col-sm">
           <figure>
-            <img src="/static/images/frontpage.jpg" alt="cover" width="100%">
+            <img src="{% static 'images/frontpage.jpg' %}" alt="cover" width="100%">
           </figure>
         </div>
         <div class="col-sm-3">

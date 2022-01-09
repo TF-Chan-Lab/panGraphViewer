@@ -1,364 +1,279 @@
+
 <h1 align="center">Manual for panGraphViewer</h1>
 <br/><br/>
 <h3 align="center">Yuxuan Yuan, Ricky Ma and Ting-Fung Chan*</h3>
-<h5 align="center">the Chinese University of Hong Kong, Hong Kong</h5>
+<h5 align="center">The Chinese University of Hong Kong, Hong Kong</h5>
 <p align="center">
   <img width="500" src="src/cover.jpg" alt="panGraphViewer logo">
 </p>
 <br/><br/>
-<h4 align="center">Version 1.0</h4>
-<h4 align="center"> 2021-08-05</h4>
-<div style="page-break-after: always;"></div>
-
-## Table of Contents
-- [Versions and dependences](#versions-and-dependences)
-  - [Desktop-based panGraphViewer](#desktop-based-pangraphviewer)
-    - [Library installation for the desktop-based version](#library-installation-for-the-desktop-based-version)
-    - [Start the desktop-based version](#start-the-desktop-based-version)
-  - [Web-based panGraphViewer](#web-based-pangraphviewer)
-    - [Library installation for the web-based version](#library-installation-for-the-web-based-version)
-    - [Start the web-based version](#start-the-web-based-version)
-- [The Files needed in the application](#the-files-needed-in-the-application)
-  - [The rGFA file](#the-rgfa-file)
-  - [The VCF file](#the-vcf-file)
-  - [The BED file](#the-bed-file)
-- [Q&A:](#qa)
-  - [The minimum computing resource needed](#the-minimum-computing-resource-needed)
-  - [Which application should I use](#which-application-should-i-use)
-  - [The backbone sample](#the-backbone-sample)
-  - [The colors showed in the graph](#the-colors-showed-in-the-graph)
-  - [The type of graphs](#the-type-of-graphs) 
-  - [The shapes showed in the graph](#the-shapes-showed-in-the-graph)
-  - [How to use the program](#how-to-use-the-program)
-  - [Different variations](#different-variations)
+<h4 align="center">Version 1.0.1</h4>
+<h4 align="center"> 2021-12-10</h4>
 
 <div style="page-break-after: always;"></div>
 
-## Versions and dependences
-Here we provide **two** application versions:
-```
-● Desktop-based application
-● Web browser-based application
-```
-Overall, **Python3** is needed to run this software and we recommend using ``miniconda3`` to install all ``python3`` libraries.
-```
-● On Windows system, you can download miniconda3 at 
-  https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+# Table of Contents
+
+- [Workflow for using panGraphViewer](#workflow-for-using-pangraphviewer)
+  - [Plot a genome graph](#plot-a-genome-graph)
+  - [Check the sequence of nodes of interest](#check-the-sequence-of-nodes-of-interest)
+  - [Show gene models that may be interrupted by some sequences/nodes in some samples](#show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples)
+- [How to use desktop-based panGraphViewer](#how-to-use-desktop-based-pangraphviewer)
+  - [Load Files for Graph Visualization](#load-files-for-graph-visualization)
+    - [GFA](#gfa)
+    - [VCF](#vcf)
+  - [Selection for Plot](#selection-for-plot)
+  - [Genome Graph](#genome-graph)
+  - [Check node information](#check-node-information)
+  - [Display gene models that may be interrupted in some samples](#display-gene-models-that-may-be-interrupted-in-some-samples)
+- [How to use web browser-based panGraphViewer](#how-to-use-web-browser-based-pangraphviewer)
+
+<div style="page-break-after: always;"></div>
+
+## Workflow for using panGraphViewer
+
+Thank you for choosing panGraphViewer. Hope you can find our tool is useful for your study. In this section, we will introduce a general ``workflow`` (see the figure below) that can be used to explore ``panGraphViewer``.
 
-● On macOS system, you can download miniconda3 at 
-  https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh  
-
-● On Linux system,  you can download miniconda3 at 
-  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-```
-
-After the installation of ``miniconda3``, you can follow the steps below to run `panGraphViewer`.
-
-### Desktop-based panGraphViewer
-
-#### Library installation for the desktop-based version
-
-Steps on different systems
-
-* If you use ``Windows`` system, you may need to find or search ``Anaconda Prompt (miniconda3)`` first and then open it.
-
-* If you use ``macOS`` or ``Linux`` system, you may open ``Terminal`` first and then type the command line below
-    ```
-    $ export PATH=/full/path/to/miniconda3/bin:$PATH # modify the path based on your ENV
-    ```
-
-After the steps above, you can install the ``python3`` libraries by typing:
-
-```
-conda config --add channels conda-forge
-conda config --add channels bioconda
-conda install pyqt pyqtwebengine configparser pandas bokeh==2.2.3 dna_features_viewer natsort attrdict networkx 
-```
-
-If you use ``pip``, you can install the ``python3`` libraries like:
-```
-pip install PyQt5 PyQtWebEngine configparser pandas bokeh==2.2.3 dna_features_viewer natsort attrdict networkx
-```
-
-or you can use ``pip`` to install like (need to go to the ``panGraphViewerApp`` directory first)
-
-```
-pip install -r requirement.txt ## On Linux or macOS system
-pip install -r requirement_windows.txt ## On Windows system
-```
-
-**Note:** 
-
-1. On ``Linux`` or ``macOS`` system, ``pysam`` is needed. You may install this package using
-
-    ```
-    $ conda install pysam 
-    ```
-
-2. On ``Windows`` platforms, as `pysam` is not available, we use a windows-version ``samtools`` package instead. Additional libraries below are needed and can be installed using
-
-    ```
-    > conda install m2-base pyfaidx
-    ```
-
-#### Start the desktop-based version 
-
-1. On ``Linux`` or ``macOS`` system, you may use the command line below in ``Terminal`` to open the software.
-
-    ```
-    $ cd /full/path/to/panGraphViewer/panGraphViewerApp # modify the path based on your ENV
-    $ python panGraphViewerApp.py
-    ```
-2. On ``Windows`` system, you may search and open ``Anaconda Prompt (miniconda3)`` first and then move to the ``panGraphViewer`` directory. For example, if you have put ``panGraphViewer`` on your ``Desktop`` and the opened ``Anaconda Prompt (miniconda3)`` is in your ``C`` drive, you may use the command line below to start the program:
-
-    ```
-    > cd C:\Users\%USERNAME%\Desktop\panGraphViewer\panGraphViewerApp
-    > python panGraphViewerApp.py
-    ```
-
-    If you have put ``panGraphViewer`` on other drive, you may need to move to the target drive first. For instance, the target drive is ``D``, you can move to the drive by typing **D:** in ``Anaconda Prompt (miniconda3)`` and then move to the ``panGraphViewer`` directory to execute ``panGraphViewerApp.py``.
-
-    Please **NOTE** that on ``Windows`` system, you need to use backslash ``\ `` rather than the common slash ``/`` to move to the target directory.
-
-3. The logging information will show in ``Anaconda Prompt (miniconda3)`` or ``Terminal`` depending on the system you use (Will be good for you to monitor the status of the application). 
-
----
-### Web-based panGraphViewer
-
-To meet different requirments, we have also created a web-based ``panGraphViewer``. Basically, most functions provided in the ``Desktop-based`` version have been implemented in the ``Web browser-based`` version. Users can install this version locally or directly deploy this online. The ``web browser-based`` verison offers administrative functions to help create accounts for different users. 
-
-#### Library installation for the web-based version
-Depending on the systems used, users can use ``pip`` directly to install the needed ``python3`` libraries after moving to the ``panGraphViewerWeb`` directory.
-
-```
-pip install -r requirement.txt ## On Linux or macOS system
-pip install -r requirement_windows.txt ## On Windows system
-```
-As mentioned in the ``desktop-based`` version, ``pysam`` cannot be installed on ``Windows`` systems, users need to install alternatives on ``Windows`` by using
-```
-> conda install m2-base pyfaidx
-```
-For ``Linux`` or ``macOS`` users, ``pysam`` can be installed directly using 
-```
-$ conda install pysam
-```
-
-#### Start the web-based version
-After the installation above, users can move to the ``panGraphViewerWeb`` directory by referring to the steps mentioned in the ``desktop`` version through ``Terminal`` or ``Anaconda Prompt (miniconda3)``. 
-
-**Note** that the folder needed here is **panGraphViewerWeb**.
-
-Once moving to the ``panGraphViewerWeb`` directory, users can start the application by typing 
-```
-python manage.py runserver <IPaddress>  ## on local machine the IPaddress can be: localhost:8004
-```
-
-or users can use the ``CMD`` below to start the ``Web browser-based`` version 
-```
-$ bash run.sh   ## On linux or macOS system.
-> run.bat ## On Windows system
-```
-
-Once the words ``Starting development server at http://localhost:8004/`` or similar infomation is shown, user can open a browser to open the ``web-based panGraphViewer``.
-
-The admin page is ``http://localhost:8004/admin`` and the inital admin info is:
-```
-Account: admin
-password: abcd1234
-```
-
-**Note:** please use the **go back** button provided by the web browser to **move back** rather than directly clicking the corresponding functions in the web page to perform analyses.
-
-
-### The Files needed in the application
-
-#### The rGFA file 
-
-1. If you have multiple high-quality genome assemblies from different individuals, you may use [minigraph](https://github.com/lh3/minigraph) (``Linux`` preferred) to generate a reference GFA (``rGFA``) file.
-
-    Before the running, the header of the fasta file needs modifying. For example, if you have a fasta file from **Sample1** with a header like:
-    ```
-    >chr1
-    AAAAAGCCGCGCGCGCTTGCGC
-    ```
-
-    You may modify the header to:
-    ```
-    >Sample1||chr1
-    AAAAAGCCGCGCGCGCTTGCGC
-    ```
-    On ``Linux``, the command lines that can be used to achieve this are:
-    ```
-    $ sample="" ## the name of the sample. For instance: Sample1
-    $ fasta="" ## full path to the fasta file
-    $ name=`echo $fasta | rev | cut -d"." -f2-| rev`
-    $ sed -e "s/>/>${sample}||/g" $fasta > ${name}.headerModified.fasta
-    ```
-
-    We also provide a python script ``renameFastaHeader.py`` to help this conversion. The script can be found in the ``scripts`` folder under ``panGraphViewer`` --> ``panGraphViewerApp``. Or users can use the UI to convert by clicking ``Tools`` --> ``Format Conversion`` --> ``Modify FASTA Header``.
-
-    ```
-    usage: renameFastaHeader.py [-h] [--version] [-f FASTA] [-n NAME] [-o OUTPUT]
-
-    rename the header of a given fasta file
-
-    optional arguments:
-      -h, --help  show this help message and exit
-      --version   show program's version number and exit
-      -f FASTA    a fasta format file
-      -n NAME     name of the sample
-      -d DELIM    delimiter. Default: '||'
-      -o OUTPUT   the output directory
-    ```
-
-    Please **NOTE** that:
-
-    I). If you do not modify the header of your fasta file and directly use ``minigraph`` to generate the ``rGFA`` file, ``panGraphViewer`` can still read the file, while many features, such as ``where the node comes from`` would not show in detail. A warning message will display in both UI and the opened ``Terminal`` or ``powershell``.
-
-    II). For the sample name, please ``DO NOT`` include ``||``.
-
-2. If you don't have an ``rGFA`` file, but a ``GFA`` file, you may try to follow the standard [here](https://github.com/lh3/gfatools/blob/master/doc/rGFA.md) to convert your ``GFA`` file into an ``rGFA`` file. After generating an ``rGFA`` file, you can use this software to visualise the graph of interest. 
-
-#### The VCF file
-
-We also accept a ``VCF`` file to show the graph. Basically, a reference FASTA file is **optional** if the ``VCF`` is a standard one. The program will automatically check the input ``VCF`` file and evaluate if the ``VCF`` file meets the requirement. If not, a message will show.
-
-``VCF`` **filtration** is highly recommended before plot the graph. 
-
-We also provide a method to help convert a ``VCF`` file to an ``rGFA`` file. Users can perform the conversion directly through the interface provided in the application or directly use ``vcf2rGFA.py`` under the ``panGraphViewer`` --> ``panGraphViewerApp`` --> ``scripts`` folder. 
-
-**Note:** If there are **many** variations in the ``VCF`` file, we recommend using ``vcf2rGFA.py`` directly to convert by chromosomes rather than converting entirely. This will save a lot of computing resource when plot graphs.
-
-The usage of ``vcf2rGFA.py`` is shown below. Both ``Windows`` and ``Linux/macOS`` users can directly use this script to convert a ``VCF`` file to an ``rGFA`` file. 
-```
-usage: vcf2rGFA.py [-h] [--version] [-f FASTA] [-b BACKBONE] [-v VCF] [-o OUTPUT] [-c [CHR [CHR ...]]] [-n NTHREAD]
-    
-Convert a vcf file to an rGFA file
-    
-optional arguments:
-    -h, --help          show this help message and exit
-    --version           show program's version number and exit
-    -f FASTA            a fasta format file that from the backbone sample
-    -b BACKBONE         the name of the backbone sample
-    -v VCF              the vcf file
-    -o OUTPUT           the output directory
-    -c [CHR [CHR ...]]  the name of the chromosome(s) [default: all chroms]
-    -n NTHREAD          number of threads [default: 4]
-```
-
-#### The BED file 
-
-Basically, the ``BED`` file should contain the annoation information from the ``backbone`` sample. There should be at least 6 columns in the ``BED`` file.
-
-| Column  | Information                                                           |
-| :-----: | :---------------------------------------------------------------------|
-| 1       | Chromosome ID                                                         |
-| 2       | Gene start position                                                   |
-| 3       | Gene end position                                                     |
-| 4       | Gene ID                                                               |
-| 5       | Score (or others; the program does not use the info in this column)   |
-| 6       | Orientation                                                           |
-
-Users can load the ``BED`` file to check the overlaps between variations and genes. By default, genes overlapping with more than ``2`` nodes will be shown in the dropdown menu. A gene list will be saved in the output directory after parsing the ``BED`` file.
-
----
-
-### Q&A:
-#### The minimum computing resource needed 
-
-The minimum computing resource needed for running the application
-```
-Memory:  1Gb
-Threads: 2
-```
----
-
-#### Which application should I use
-
-For the ``desktop-based`` application, it is optimized on ``Windows 10`` and ``macOS Big Sur``. ``Ubuntu 18.04.5`` is also tested. For ``Linux`` operating system version below ``Ubuntu 18.04.5`` or equivalent, such as ``Ubuntu 16.04``, ``PyQtWebEngine`` may not work properly. For other versions of operating systems, the ``desktop-based`` application may still work, however, the **layout** of the application may differ.
-
-For the ``web browser-based`` version, we suggest running in ``Linux`` or ``macOS`` environment. If users want to run on ``Windows`` systems, ``Windows 10`` or above is recommended. Users can also use ``docker`` to run the ``web browser-based`` version. However, ``WSL`` is needed to run the docker version on ``Windows 10`` or above.
-
----
-
-#### The backbone sample
-
-The ``backbone`` sample is the one used as the **main sequence provider** to produce the pangenome graph or the reference sample to produce the ``VCF`` file. In the pangenome graph, most of the nodes are from the ``backbone`` sample (shared by all) with some nodes (variations) from other samples. 
-
----
-#### The colors showed in the graph
-
-Each sample uses one particular colour and **the most frequent colour** should be the one used for the ``backbone`` sample. The colours are randomly selected by the program from a desgined colour palletes.
-
----
-#### The type of graphs 
-
-We provides two kinds of graph plots in the program to achieve a good performance and visualisation. By default, if the number of checked nodes <= **200**, ``vis.js`` based graph will show. Otherwise, a ``cytoscape.js`` based graph will show. Users can change the settings in the ``desktop-based`` application.
-
----
-#### The shapes showed in the graph
-
-If you use a ``VCF`` file to show graphs, we use different nodes shapes to represent different kinds of variants. For instance, in the default settings for the ``vis.js`` based graph, ``dot`` represent ``SNP``, ``triangle`` represents ``deletion``, ``triangleDown`` reprsents ``insertion``, ``database`` represents ``duplication``, ``text`` shows ``inversion`` and ``star`` represent ``translocation``. Users can change the corresponding settings to select preferred node shapes to represent different variations on the ``desktop-based`` application.
-
----
-#### How to use the program
-
-For the ``desktop-based`` version, once the application is open as shown below, users can use the following steps to explore the program.
 <p align="center">
-  <img width="600" src="src/application.jpg" alt="application">
+  <img width="700" src="src/workflow.jpg" alt="workflow">
 </p>
 
-For the ``web-based`` version, the login interface is like:
+There are three key functions that we would like to emphasize.
+* Plot a genome graph 
+* Check the sequence of nodes of interest
+* Show gene models that may be interrupted by some sequences/nodes in some samples
+
+<div style="page-break-after: always;"></div>
+
+### Plot a genome graph
+Depending on the purpose and preference, users can install either application on their platform.
+
+* Before starting the application, firstly, users need to prepare an ``rGFA`` file, a ``GFA`` file or a ``VCF`` file that can be directly imported into the application. An output directory is also needed when processing the analyses. 
+
+* After specifying a needed file and an output directory, users can start to parse the file and then the graph information underlying would be stored in the memory. Users can adjust their purpose to decide which chromosome/sequence or a segment of it can be displayed in the display canvas by specifying the ``backbone``, ``chromosome/sequence`` name and ``coordinates``. 
+
+* Once the graph is displayed, users can use, for example, the ``mouse`` to zoom in and out to explore the graph. Hover information will show in the canvas if users move the ``mouse`` to the node.
+
+### Check the sequence of nodes of interest
+If users find some nodes are of interest, they can check or save the sequence of the nodes.
+
+* Usually, users can check nodes that are in variant hotspot regions or nodes falling in the gene model regions which may interrupt the genes and change the functions in some samples.
+
+* The saved node sequences can also be imported to other tools such as ``NCBI BLAST`` to check the functions.
+
+### Show gene models that may be interrupted by some sequences/nodes in some samples
+If users have the annotation file for the ``backbone`` sample, they can check gene models that are interrupted by some sequences/nodes in some samples. 
+
+* This would be of particular interest to biologists to find out if some important gene models are interrupted by some insertions, deletions, duplications or inversions in some samples.
+
+<div style="page-break-after: always;"></div>
+
+## How to use desktop-based panGraphViewer
+
+For the ``desktop-based`` application, once it is opened as shown below, users can follow the following steps to explore the program.
 <p align="center">
-  <img width="300" src="src/webLogin.jpg" alt="application-web">
+  <img width="700" src="src/application.jpg" alt="application">
 </p>
 
-Basically, the program reads ``rGFA`` file, ``VCF`` file and ``BED`` file. 
+### Load Files for Graph Visualization
+Here we provide two options to let users select if they want to explore a ``GFA``-based graph or a ``VCF``-based graph.
 
-1. If an ``rGFA`` file is available, users can browse the system to import the ``rGFA`` file directly. 
+#### GFA
+When selecting to plot a ``GFA``-based graph, an ``rGFA`` file or a ``GFA`` file is needed. Users can click the ``Select`` button to specify the file and then select an output directory to perform the analyses.
 
-2. If an ``rGFA`` file is not available but a ``VCF`` file is available, users can import the ``VCF`` directly. 
+<p align="center">
+  <img width="320" src="src/load_gfa_d.jpg" alt="load_gfa_d">
+</p>
 
-   Please **NOTE** that the ``default`` settings for ``Threads`` is ``4``. Users can change ``4`` to any integer ``>=1`` depending on the threads that the system can provide. The name of ``backbone`` and the ``backbone`` FASTA is **optional**. If they are not given, the program will automatically check and assign a name (``backbone`` by default).
+#### VCF
+When selecting to plot a ``VCF``-based graph, a ``VCF`` file is needed. 
+<p align="center">
+  <img width="320" src="src/load_vcf_d.jpg" alt="load_vcf_d">
+</p>
+
+Users can click the ``Select`` button to specify the VCF file. An output directory is also needed to perform the analyses. Here the ``Backbone name`` and ``Backbone fasta`` are optional if 
+* the VCF file is a standard one with sequence/contig header and length clearly documented and users do not have a ``backbone fasta`` 
+* users have a standard VCF file but have no interest in node sequences 
+
+The program will check automatically if the given ``VCF`` file is a standard one once a ``fasta`` file is not specified. If the ``VCF`` file selected is not qualified, an error message will pop up.
+
+<p align="center">
+  <img width="320" src="src/vcf_err_d.jpg" alt="vcf_err_d">
+</p>
+
+Otherwise, a warning message will show.
+
+<p align="center">
+  <img width="320" src="src/fasta_missing_d.jpg" alt="fasta_missing_d">
+</p>
+
+By default the ``Backbone name`` is **backbone** and the ``Threads`` to parse the VCF file is ``4``.   
+
+Once the files are selected and the output directory is specified, users can click the ``Start`` button to parse either the given ``GFA`` file or the ``VCF`` file. The program will run internally with '<span style="color:blue">Parsing... or Converting ...</span>'  showing in the ``Status`` bar. Once this is completed, '<span style="color:green">Finished in xxx s!</span>' will show. 
+
+### Selection for Plot
+After completing ``GFA`` or ``VCF`` parsing, users can go to the ``Selection for Plot`` panel to check genome graphs. Here we provide ``Basic settings`` and ``Sample(s) showing`` panels to let users customize their plots. 
+
+In the ``Basic settings`` panel, users can select a particular ``chromosome/sequence`` to display after specifying the name of the ``backbone`` sample.
+
+<p align="center">
+  <img width="300" src="src/selection_basic_d.jpg" alt="selection_basic_d">
+</p>
+
+For the ``start`` and ``end`` positions, users can specify both of them, one of them or none. For example, 
+* if users specify both ``start`` and ``end`` positions, the graph will be limited to the two positions within the selected chromosome/sequence. 
+* if only ``start`` position is given, the program will display a graph between the ``start`` position and the end position of the selected chromosome/sequence. 
+* if only ``end`` position is given, the program will display a graph between 1 to the given ``end`` position within the selected chromosome/sequence. 
+* if both start and end positions are not given, the program will display the entire graph of the selected chromosome/sequence.
+
+Additionally, the program will check if the given ``start`` and ``end`` positions are qualified automatically. If not, a warning message will pop up and the plot will not be generated.
+
+For the ``Sample(s) showing`` panel, users can select to hide nodes from particular sample(s) if they have such a demand.
+
+<p align="center">
+  <img width="320" src="src/sample_s_d.jpg" alt="sample_s_d">
+</p>
+
+### Genome Graph
+After completing the settings above, users can either click the ``Plot`` button in the ``Plot the Graph`` panel to generate the graph or customise the ``Settings`` first and then plot graphs. 
+
+In ``Settings``, users can select ``Node Shapes`` to specify node shapes in either ``vis.js``-based plot or ``cytoscape.js``-based plot from the dropdown menus.
+
+<p align="center">
+  <img width="280" src="src/node_shape_d.jpg" alt="node_shape_d">
+</p>
+
+Users can also select to use either ``vis.js`` or ``cytoscape.js`` to plot graphs by the number of nodes specified in the ``Graph Modification`` panel under ``Settings``. 
+
+<p align="center">
+  <img width="280" src="src/graph_m_d.jpg" alt="graph_m_d">
+</p>
+
+By default, if users want to check graphs with <=200 nodes, ``vis.js`` will be applied to generate graphs. Users can adjust this value (``200``) depending on their preference. However, if there are over ``five thousands`` of nodes that users want to browse in one graph, we **don't recommend** using ``vis.js`` as it may take a long time to load the graph file (an html file).
+
+Depending on the screen/display size, users may also need to adjust the canvas ``height and width`` to make the graph fully show in the canvas if selecting ``vis.js``-based plot. The hover box may run off the screen if the canvas ``height and width`` settings do not match with users' screen size. 
+
+Once all settings are ready, users can click the ``Plot`` button to generate the graphs. After the graph is shown in the display canvas, users can use the ``mouse`` to zoom in and out to check graph details. Users can also move the ``mouse`` close to a specific node to check the node information (**mouseover**, see the figure below).
+
+<p align="center">
+<img width="380" src="src/hover.jpg" alt="hover">
+</p>
+
+<div style="page-break-after: always;"></div>
+
+From the hover box, users can capture the information, such as
+  
+  * **NodeID**: the node identity 
+  * **Resource**: the node belongs to which chromosome/sequence in which sample
+  * **Len**: the sequence length of the node
+  * **Pos**: the coordinate of the backbone node
+  * **Info**: if the graph is from a VCF file, it will show the type of variants and the occur position in the backbone sample. ``SNP`` represents single nucleotide polymorphism, ``INS`` represents insertion, ``INV`` represents inversion,  ``DUP`` represents duplication and ``TRANS`` represents translocation.
+  * **Seq**: the first 10 nucleotides of the node sequence if it has
+
+If users decide to use ``vis.js`` to plot graphs, we also provide some options in ``Settings`` to let users customize the plot if they don't like the default one.
+
+* **Graph Interaction**: to enable/disable some functions when interacting with the graph
+
+<p align="center">
+  <img width="320" src="src/interaction.jpg" alt="interaction">
+</p>  
+
+* **Graph Modification**: to customise the display of the graph, for instance the ``graph layout``, ``edge length`` and the ``degree of node overlapping``.  
+  
+<p align="center">
+  <img width="320" src="src/GM.jpg" alt="GM">
+</p>
+
+Users can customise the graph by enabling the options and the corresponding options would be shown in the display canvas during ``graph display``. 
+
+While in ``cytoscape.js``-based plot, we do not provide such functions or interactions mentioned in the ``vis.js``-based plot. However, one unique interaction in ``cytoscape``-based plot is that users can press ``Ctrl`` or ``command`` and hold the ``left click`` button of the ``mouse`` to select particular node regions and then ``right`` click the ``mouse`` to show or hide nodes (see the figure below). This would be useful if users want to check a specific subgraph.
+
+<p align="center">
+<img width="380" src="src/mSelection.jpg" alt="mSelection">
+</p>
+
+### Check node information
+We provide two ways to check the node information. 
+* One way is that users can move the ``mouse`` to a specific node in the display canvas and then a hover box will show the information of the node. 
+  
   <p align="center">
-    <img width="300" src="src/vcfLoad.jpg" alt="VCF">
+  <img width="380" src="src/hover.jpg" alt="hover">
   </p>
 
-3. After importing the file(s) and specifying an output directory, users can click ``Start`` button. The progrom will run internally with '<span style="color:blue">Parsing... or Converting ...</span>'  showing in the ``Status`` bar. Once this is completed, '<span style="color:green">Finished in xxx s!</span>' will show. 
+* Another way is that users can check the information of nodes from the ``Available Nodes`` panel. 
+  
+  <p align="center">
+    <img width="320" src="src/aNodes.jpg" alt="aNodes">
+  </p>
 
-4. Now users can select the name of the ``backbone`` sample and the chromosome id that wants to check. By giving a coordinate (``start`` and ``end`` positions), a graph will be ready to show. Here the coordinate is **optional**. If ``start`` and ``end`` positions are missing, the graph of the selected whole chromosome will show. If any of the ``start`` and ``end`` position is missing, the program will handle this automatically.
+  * In the dropdown menu, all nodes in the entire graph will be listed. Users can select the node that they want to check or remove it from the selected list.
+  * Users can also type the node id in the ``List of the selected node(s)`` panel by lines
+  * Once clicking the ``Check`` button, the program will show the selected nodes in ``fasta`` format with a header similar to the one shown in the ``hover`` box. However, the sequence would be the completed sequence of the node. 
+  * Users can also click the ``Save the Sequences`` button to save the ``fasta`` file to the output directory. Users can import the saved sequence file to other programs, such as ``NCBI-blast`` for downstream analyses.
+  
+  Please **note** that by default we only allow a sequence display with <= ``1000000`` bp in length. The reason to do this is that if a large sequence is needed to display, it would take a long time to show. Users can change the setting in ``Settings``--> ``Graph Modification`` if they really want to display a large sequence. 
 
-5. Users can change the shape of nodes and modify the display of graph by changing the corresponding ``Settings`` on the top left panel of the ``GUI``. 
-   
-6. In the ``Sample(s) showing`` panel, users can remove or add particular ``samples`` which will be shown or hidden in the graph. The ``backbone`` sample cannot be removed.
-
-7. Once all settings are completed, users can click the ``plot`` button to check the graph. Simiarly, the ``running`` and ``completed`` information will show in the ``Status`` bar under the ``Plot the Graph`` panel. The graph will show in the canvas and the graph can be zoomed in and zoomed out. By moving the mouse, the information of each node can show. 
-   
-    <p align="center">
-    <img width="300" src="src/mouseover.jpg" alt="mouseover">
-    </p>
-
-8. If ``Cytoscape`` graph is shown, users can press ``CTRL`` or ``command`` and hold the ``left click`` of the ``mouse`` to select particular node regions and ``right`` click the ``mouse`` to show or hide nodes.
-    <p align="center">
-    <img width="300" src="src/mSelection.jpg" alt="mSelection">
-    </p>
-
-9. Users can check the sequences of particlar nodes by selecting through the node combobox or directly input in the textbox. Please **Note** that each line can only input one node id.
-
-10. When checking the overlap between genes and variation regions, users can import a ``BED`` file in the ``Check Overlap with Genes`` panel. After parsing the ``BED`` file, genes overlapping with at least ``2`` nodes will in the dropdown menu. Users can select gene of interest to check overlaps. In the canvas, a graph will show. Users can enable the zoom-in and zoom-out function by clicking the ``Wheel Zoom(x-axis)`` button on the right top panel in the canvas.  
-    <p align="center">
-    <img width="350" src="src/gene.jpg" alt="gene">
-    </p>
-
-11. Users can explore other settings to get a preferred graph. Screenshot function is also provided. On ``Windows`` systems, users can press ``ALT+P`` to start screen clipping. By holding the ``left click`` button of the ``mouse`` to select the regions and ``double left click`` to save the image.
-
----
-#### Different variations 
-
-If users use a ``VCF`` file to generate a graph genome, when moving the ``mouse`` to the graph node, the program will automatically show the variation types, such as ``SNP``(single nucleotide polymorphism), ``INS`` (insertion), ``INV`` (inversion) and ``DUP`` (duplication). The corresponding nodes from the ``backbone`` sample will also be linked and shown. 
+### Display gene models that may be interrupted in some samples 
+If users have an annotation file for the ``backbone`` sample, they can check gene models that may be interrupted by some sequences in some samples. 
 
 <p align="center">
-  <img width="450" src="src/variant.jpg" alt="variant">
+  <img width="320" src="src/gene_d.jpg" alt="gene_d">
 </p>
 
+Basically, users need to 
+* specify the annotation file and then parse it. By default, gene models having at least ``2`` nodes falling in the region can be retained. Users can change this setting in ``Settings`` --> ``Graph Modification``.
+* once the parsing is completed, users can select a gene model from the dropdown menu to check nodes that fall in the selected gene region.
+
+After clicking the ``Plot`` button, a plot will show in the display canvas.  
+
+<p align="center">
+  <img width="380" src="src/gene.jpg" alt="gene">
+</p>
+
+* Users can enable the zoom in and out function by clicking the ``Wheel Zoom(x-axis)`` button on the right top panel in the canvas. 
+* In the canvas, users can get the selected gene model ID and the nodes falling in the gene region. 
+* Users can check the nodes through the ``Available Nodes`` panel or plot ``subgraphs`` using the coordinate of the gene model.
+
+<div style="page-break-after: always;"></div>
+
+## How to use web browser-based panGraphViewer
+
+After the installation of the web-based panGraphViewer, users can follow ``README`` to open it. The login interface is like:
+
+<p align="center">
+  <img width="320" src="src/webLogin.jpg" alt="application-web">
+</p>
+
+Users can use the test account (``demo``) or personal account to open the application. 
+
+After opening the page showing above, users can 
+
+* follow similar approaches used in the ``desktop-based`` version, users can ``upload`` and ``parse`` a GFA file, an ``rGFA`` file or a ``VCF`` file to the system
+* plot pangenome graph/subgraph from the ``Plot pangenome`` panel
+* explore the node information from the ``Extract nodes`` panel
+* check gene models that may be interrupted by some sequences in some samples
+
+<p align="center">
+  <img width="450" src="src/webUI.jpg" alt="webUI">
+</p>
+
+Notably, when selecting specific nodes in the graph, the web-based application provides options to directly check/download the node sequence(s). 
+
+<p align="center">
+  <img width="400" src="src/sequence_w.jpg" alt="sequence_w">
+</p>
+
+For the ``admin`` account, users can login using the steps shown in the ``README`` file. The interface of the login page is like: 
+
+<p align="center">
+  <img width="300" src="src/admin.jpg" alt="admin">
+</p>
+
+Once entering the login page, the admin can create accounts for either groups or users.
+
+<p align="center">
+  <img width="300" src="src/admin_p.jpg" alt="admin_p">
+</p>
+
+---
 Enjoy using panGraphViewer!

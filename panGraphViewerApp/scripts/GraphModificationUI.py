@@ -17,7 +17,7 @@ class Ui_GraphModi(object):
         GraphModi.setMinimumSize(QtCore.QSize(380, 390))
         GraphModi.setMaximumSize(QtCore.QSize(380, 390))
         self.label = QtWidgets.QLabel(GraphModi)
-        self.label.setGeometry(QtCore.QRect(10, 10, 211, 31))
+        self.label.setGeometry(QtCore.QRect(10, 10, 361, 31))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -144,7 +144,7 @@ class Ui_GraphModi(object):
     def retranslateUi(self, GraphModi):
         _translate = QtCore.QCoreApplication.translate
         GraphModi.setWindowTitle(_translate("GraphModi", "Graph Modification"))
-        self.label.setText(_translate("GraphModi", "Graph Modification "))
+        self.label.setText(_translate("GraphModi", "Graph Modification for vis.js Graph"))
         self.threshold.setText(_translate("GraphModi", "2"))
         self.interaction.setItemText(0, _translate("GraphModi", "No"))
         self.interaction.setItemText(1, _translate("GraphModi", "Yes"))
@@ -157,7 +157,7 @@ class Ui_GraphModi(object):
         self.label_4.setText(_translate("GraphModi", "Enable add/remove node"))
         self.label_10.setText(_translate("GraphModi", "Min num. of node overlapping with a gene  "))
         self.label_6.setText(_translate("GraphModi", "Canvas width"))
-        self.maxNodesDisplay.setText(_translate("GraphModi", "2500"))
+        self.maxNodesDisplay.setText(_translate("GraphModi", "200"))
         self.layoutModification.setItemText(0, _translate("GraphModi", "No"))
         self.layoutModification.setItemText(1, _translate("GraphModi", "Yes"))
         self.label_2.setText(_translate("GraphModi", "Enable interaction"))

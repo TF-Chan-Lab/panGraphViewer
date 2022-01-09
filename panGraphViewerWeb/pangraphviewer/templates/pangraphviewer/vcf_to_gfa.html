@@ -4,7 +4,7 @@
 
 {% load static %}
 
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<script src="{% static 'fontawesome_free/js/all.min.js' %}"></script>
 
 <script src={% static 'pangraphviewer/js/vcf_to_gfa.js' %} defer></script>
 
@@ -56,7 +56,7 @@
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('vcf_path','vcf')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('vcf_path','vcf')">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -86,7 +86,7 @@
               </div>
               <div class="col">
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('fasta_path','fasta')">
-                  <i class="fa fa-refresh" aria-hidden="true"></i>
+                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('fasta_path','fasta')">
                   <i class="fa fa-trash" aria-hidden="true"></i>
@@ -131,12 +131,14 @@
 </div>
 
 <script>
-$('#vcf_upload_icon').click(function () {
-  $('#vcf_upload').trigger('click');
+$(document).ready(function() {
+  $('#vcf_upload_icon').click(function () {
+    $('#vcf_upload').trigger('click');
+  });
+  $('#fasta_upload_icon').click(function () {
+    $('#fasta_upload').trigger('click');
+  });
 });
-$('#fasta_upload_icon').click(function () {
-  $('#fasta_upload').trigger('click');
-});
-</script
+</script>
 
 {% endblock content %}

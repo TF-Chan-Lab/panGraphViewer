@@ -1,24 +1,15 @@
 ## Welcome to the Desktop-based PanGraphViewer
 
-You may use ``pip`` in ``miniconda3`` to install the packages
+### How to install this application
 
-On ``Linux`` or ``macOS``:
-```
-pip install -r requirements.txt 
-```
+You may follow the instruction [here](../README.md#desktop-based-pangraphviewer) to install this application.
 
----
-On Windows:
-```
-pip install -r requirements_windows.txt
-```
-One more packages on ``Window`` platform is
-```
-conda install m2-base
-```
+### How to open the application
 
----
-Once the installation is completed, you may follow the [Manual](../doc/Manual.md) to run the software.
+You may follow the instruction [here](../README.md#start-the-desktop-based-version) to start the application.
 
----
+### How to use this application
+
+You may follow the [Manual](../doc/Manual.md#how-to-use-desktop-based-pangraphviewer) to get familiar with the software.
+
 Enjoy the use of panGraphViewer!

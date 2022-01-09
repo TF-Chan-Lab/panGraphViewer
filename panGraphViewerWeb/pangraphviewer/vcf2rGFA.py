@@ -4,8 +4,8 @@ import os
 import sys
 import logging
 import re
-from os import path
-from pathlib import Path
+#from os import path
+#from pathlib import Path
 
 from argparse import ArgumentParser
 from multiprocessing import Process, Pool, Manager
@@ -13,7 +13,7 @@ from natsort import natsorted, ns
 
 try:
     from scripts.vcf2rGFAHelper import *
-except:
+except ModuleNotFoundError:
     from vcf2rGFAHelper import *
 
 import json
@@ -56,7 +56,10 @@ class VCF2rGFA:
         self.convertAllChr = 0 if options.chr else 1
         self.prefix = options.prefix if options.prefix else f'{options.backbone}_vcf2rGFA'
 
-        os.makedirs(self.outDir, mode=0o777, exist_ok=True)
+        try:
+            os.makedirs(self.outDir, mode=0o777, exist_ok=True)
+        except:
+            pass
 
         self.nodeID = {}
 
@@ -137,6 +140,7 @@ class VCF2rGFA:
             os.remove(gfa)
 
         nodeIDMap = self.getNodeIDMap(workerResults)
+
         with open(gfa, 'w') as fd:
             for result in workerResults:
                 chr = result['chr']
