@@ -1,4 +1,4 @@
-# PanGraphViewer -- show panenome graphs in an easy way
+# PanGraphViewer -- show pangenome graphs in an easy way
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/Django?color=green&logoColor=green&style=social) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tf-chan-lab/panGraphViewer?color=green&logoColor=green&style=social) ![GitHub](https://img.shields.io/github/license/tf-chan-lab/panGraphViewer?color=green&logoColor=green&style=social) ![GitHub all releases](https://img.shields.io/github/downloads/tf-chan-lab/panGraphViewer/total?color=green&logoColor=green&style=social) 
 
