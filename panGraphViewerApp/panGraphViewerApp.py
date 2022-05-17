@@ -1937,7 +1937,9 @@ class Main(QMainWindow):
         total_seconds = time_delta.total_seconds()
         self.ui.bedParseStatus.setStyleSheet('color: green')
         self.ui.bedParseStatus.setText('Finished in %.2fs !' % total_seconds)
+
         canvas = QtWebEngineWidgets.QWebEngineView()
+        self.canvas_link.append(canvas)
         i = self.ui.vizCanvas.addTab(canvas,f"Overlap with Gene: {self.gene}")
         self.ui.vizCanvas.setCurrentIndex(i)
         html = os.path.join(self.outDir, f'drawOverlap_with_Gene-{self.gene}.html')
@@ -1946,6 +1948,7 @@ class Main(QMainWindow):
         sleep(1)
 
         canvas = QtWebEngineWidgets.QWebEngineView()
+        self.canvas_link.append(canvas)
         chr = self.run.bed[self.gene]['Chr']
         start = self.run.bed[self.gene]['Start']
         end = self.run.bed[self.gene]['End']
