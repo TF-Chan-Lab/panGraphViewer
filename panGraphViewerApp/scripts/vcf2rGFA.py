@@ -302,7 +302,8 @@ class VCF2rGFA:
 
             for sampleName in rec.samples:
                 sample = rec.samples[sampleName]
-                if sample.allele_indices != (0,0) and sample.allele_indices != (None, None):
+                #if sample.allele_indices != (0,0) and sample.allele_indices != (None, None):
+                if any(sample.allele_indices):
                     if varSeq is None:
                         varSeq = rec.alts[max(sample.allele_indices)-1]
 

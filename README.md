@@ -393,11 +393,11 @@ There are some pros and cons of this application. We list some here for your ref
 
 ***Cons***
 
-* When checking hundreds or thousands of nodes in vis.js-based graph, the nodes may cluster together in the plot which may be difficult to interpret [Third-party javascript layout problem; in this case we suggest switching to cytoscape.js-based graphs in Settings]
-* Some python libraries used, such as 'PyQtWebEngine' may not be compatible with all operating systems if using the desktop-based application [Third-party library problem; in this case users may use the web browser-based version]
+* When checking hundreds or thousands of nodes in vis.js-based graph, the nodes may cluster together in the plot which may be difficult to interpret [Third-party javascript library layout problem; in this case we suggest switching to cytoscape.js-based graphs in Settings]
+* Some python libraries used, such as 'PyQtWebEngine' may not be compatible with all operating systems if using the desktop-based application [Third-party python library problem; in this case users may use the web browser-based version]
 * Remote accessing to the desktop-based application may confront plotting problems, particularly when using macOS system remote accessing to the Linux system [Selection problem; in this case users may want to install the desktop-based application locally or use the web browser-based version]
 * In macOS, if users use the web browser-based application, the hover for nodes cannot show properly in ``Safari`` [Browser problem; in this case users may use ``Chrome`` or ``Microsoft Edge``]
-* May not be able to display a graph containing more than ``20,000`` nodes in the Desktop-based application and ``5000`` nodes in the Web browser-based application [Render problem - may render slowly or even crash in the display canvas. This is a problem inherited from the third-party javascript we used. In this case, users may want to adjust the plotting region to avoid this problem]
+* May not be able to display a graph containing more than ``20,000`` nodes in the Desktop-based application and ``5,000`` nodes in the Web browser-based application [Rendering problem - may render slowly or even crash in the display canvas. This is a problem inherited from the third-party javascript libraries we used. In this case, users may want to adjust the plotting region to avoid this problem]
 
 ---
 Enjoy using panGraphViewer!
