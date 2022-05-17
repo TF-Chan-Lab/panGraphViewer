@@ -944,7 +944,17 @@ class Main(QMainWindow):
         #self.ui.VCFtab.setEnabled(False)
         #self.ui.actionVCF_to_rGFA.setEnabled(False)
 
-        self.ui.vizCanvas.tabCloseRequested.connect(lambda index: self.ui.vizCanvas.removeTab(index))
+        self.ui.vizCanvas.tabCloseRequested.connect(lambda index: self.removeTab(index))
+
+        self.canvas_link = []
+
+    def removeTab(self, index):
+        self.ui.vizCanvas.removeTab(index)
+
+        canvas = self.canvas_link[index]
+        canvas.setParent(None)
+        canvas.deleteLater() 
+        self.canvas_link.pop(index)
 
     #=============================================== functions ===============================================
     def new(self): # create a new GUI in different PID
@@ -1577,6 +1587,7 @@ class Main(QMainWindow):
             if self.start == None and self.end != None:
                 i = self.ui.vizCanvas.addTab(canvas, f"{self.chr}: 1 - {self.end}")
             
+            self.canvas_link.append(canvas)
             self.ui.vizCanvas.setCurrentIndex(i)
 
             html = self.run.drawGraphResult['outHtml']
