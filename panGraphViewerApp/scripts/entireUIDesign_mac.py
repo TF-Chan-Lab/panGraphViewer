@@ -877,7 +877,7 @@ class Ui_panGraphViewer(object):
         self.label_13.setText(_translate("panGraphViewer", "Available nodes"))
         self.nodeStatus.setText(_translate("panGraphViewer", "Idle"))
         self.clearNodeList.setText(_translate("panGraphViewer", "Clear "))
-        self.checkNodesInfo.setText(_translate("panGraphViewer", "Check"))
+        self.checkNodesInfo.setText(_translate("panGraphViewer", "Check / Plot"))
         self.saveNodesInfo.setText(_translate("panGraphViewer", "Save the Sequences"))
         self.textEdit.setHtml(_translate("panGraphViewer", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
@@ -890,11 +890,11 @@ class Ui_panGraphViewer(object):
         self.outDirLabel.setText(_translate("panGraphViewer", "Output Directory"))
         self.status.setText(_translate("panGraphViewer", "Idle"))
         self.selectGFA.setText(_translate("panGraphViewer", "Select"))
-        self.label_10.setText(_translate("panGraphViewer", "Parse rGFA"))
+        self.label_10.setText(_translate("panGraphViewer", "Parse (r)GFA"))
         self.label_2.setText(_translate("panGraphViewer", "The GFA File"))
         self.clearGFA.setText(_translate("panGraphViewer", "Clear"))
         self.selectOutPath.setText(_translate("panGraphViewer", "Select"))
-        self.label_9.setText(_translate("panGraphViewer", "(Reference) Graphical Fragment Assembly (rGFA) "))
+        self.label_9.setText(_translate("panGraphViewer", "(Reference) Graphical Fragment Assembly (GFA) "))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.rGFAtab), _translate("panGraphViewer", "GFA"))
         self.outDirClear.setText(_translate("panGraphViewer", "Clear"))
         self.outDirSelect.setText(_translate("panGraphViewer", "Select"))

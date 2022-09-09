@@ -5,6 +5,5 @@ pandas
 bokeh==2.2.3
 dna_features_viewer
 natsort
-attrdict
 networkx
 pyfaidx

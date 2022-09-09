@@ -5,7 +5,6 @@ django-environ
 djangorestframework
 configparser
 natsort
-attrdict
 networkx
 fontawesome-free==5.15
 bokeh==2.2.3
@@ -13,3 +12,4 @@ dna_features_viewer
 pysam
 pandas
 whitenoise
+jinja2==3.0

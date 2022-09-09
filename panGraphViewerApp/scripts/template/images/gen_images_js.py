@@ -1,19 +1,19 @@
-import base64 
+import base64
 import json
 from shutil import copyfile
 
 from os import linesep
 
-shapes = {'cy':["ellipse", "triangle", "round-triangle", 
+shapes = {'cy':["ellipse", "triangle", "round-triangle",
         "rectangle", "round-rectangle", "bottom-round-rectangle",
-        "cut-rectangle", "barrel", "rhomboid", "diamond", 
-        "round-diamond", "pentagon", "round-pentagon", "hexagon", 
+        "cut-rectangle", "barrel", "rhomboid", "diamond",
+        "round-diamond", "pentagon", "round-pentagon", "hexagon",
         "round-hexagon", "concave-hexagon", "heptagon", "round-heptagon",
         "octagon", "round-octagon", "star", "tag", "round-tag", "vee"],\
          'vis':['dot','triangle','database','triangleDown','text','star',
         'ellipse', 'square', 'box', 'diamond']}
-js = '../images.js'
-js_web = '../../../../panGraphViewerWeb/static/pangraphviewer/js/images.js'
+js = '../static/images.js'
+#js_web = '../../../../panGraphViewerWeb/static/pangraphviewer/js/images.js'
 
 data = {}
 
@@ -35,6 +35,6 @@ def gen_js():
              print(f"images = ", json.dumps(data), file=f)
 
     # copy to web
-    copyfile(js, js_web)
+    #copyfile(js, js_web)
 
 gen_js()

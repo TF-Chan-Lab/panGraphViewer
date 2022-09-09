@@ -3,10 +3,15 @@
 import os
 import sys
 import shlex
-import subprocess 
-from attrdict import AttrDict
+import subprocess
 import re
 from configparser import ConfigParser
+import shutil
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 class VCF2rGFAHelper:
     def __init__(self, fasta, vcf, outDir):
@@ -23,12 +28,18 @@ class VCF2rGFAHelper:
 
         if not self.usePysam:
             if sys.platform == 'win32':
-                self.ENV['SAMTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'thirdPartyTools', 'SAMtools', 'samtools.exe')
-                self.ENV['BCFTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', 'thirdPartyTools', 'SAMtools', 'bcftools.exe')
-                self.ENV['BGZIP'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'thirdPartyTools', 'SAMtools','bgzip.exe')
-                self.samtools = self.ENV['SAMTOOLS']
-                self.bcftools = self.ENV['BCFTOOLS']
-                self.bgzip = self.ENV['BGZIP']
+                self.ENV['SAMTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'thirdPartyTools', 'SAMtools', 'samtools.exe')
+                self.ENV['BCFTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'thirdPartyTools', 'SAMtools', 'bcftools.exe')
+                self.ENV['BGZIP'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'thirdPartyTools', 'SAMtools','bgzip.exe')
+            else:
+                self.ENV['SAMTOOLS'] = shutil.which('samtools')
+                self.ENV['BCFTOOLS'] = shutil.which('bcftools')
+                self.ENV['BGZIP'] = shutil.which('bgzip')
+
+            self.samtools = self.ENV['SAMTOOLS']
+            self.bcftools = self.ENV['BCFTOOLS']
+            self.bgzip = self.ENV['BGZIP']
+
             for name in self.ENV:
                 if not os.path.isfile(self.ENV[name]):
                     sys.exit(f'ERROR: {self.ENV[name]} not found')
@@ -98,7 +109,7 @@ class VCF2rGFAHelper:
             os.system(cmd)
             cmd = f'grep -v "#" "{self.vcf}" | sort -k1V -k2 >> "{self.vcf_sorted}"'
             os.system(cmd)
-           
+
             pysam.tabix_compress(self.vcf_sorted, self.vcf_gz, force=True)
 
         elif action == 'indexFasta':
@@ -130,14 +141,14 @@ class VCF2rGFAHelper:
 
         if action == 'sortAndCompressVCF':
             cmd = f'(grep # "{self.vcf}" && grep -v # "{self.vcf}" | sort -k1V -k2) | "{bgzip}" > "{self.vcf_gz}"'
-            output = subprocess.run(shlex.split(cmd), shell=True)
+            output = self.runCmdLine(shlex.split(cmd))
 
         elif action == 'indexFasta':
             cmd = f'"{samtools}" faidx "{self.fasta}"'
-            output = subprocess.run(shlex.split(cmd), shell=True)
+            output = self.runCmdLine(shlex.split(cmd))
         elif action == 'indexVCF':
             cmd = f'"{bcftools}" index -t "{self.vcf_gz}"'
-            output = subprocess.run(shlex.split(cmd), shell=True)
+            output = self.runCmdLine(shlex.split(cmd))
         elif action == 'fetchFasta':
             chr, start, end, env = param['chr'], param['start'], param['end'], param['env']
 

@@ -1,24 +1,24 @@
 
-<h1 align="center">Manual for panGraphViewer</h1>
+<h1 align="center">Manual for PanGraphViewer</h1>
 <br/><br/>
 <h3 align="center">Yuxuan Yuan, Ricky Ma and Ting-Fung Chan*</h3>
 <h5 align="center">The Chinese University of Hong Kong, Hong Kong</h5>
 <p align="center">
-  <img width="500" src="src/cover.jpg" alt="panGraphViewer logo">
+  <img width="500" src="src/cover.jpg" alt="PanGraphViewer logo">
 </p>
 <br/><br/>
-<h4 align="center">Version 1.0.1</h4>
-<h4 align="center"> 2021-12-10</h4>
+<h4 align="center">Version 1.0.2</h4>
+<h4 align="center"> 2022-09-01</h4>
 
 <div style="page-break-after: always;"></div>
 
 # Table of Contents
 
-- [Workflow for using panGraphViewer](#workflow-for-using-pangraphviewer)
+- [Workflow for using PanGraphViewer](#workflow-for-using-pangraphviewer)
   - [Plot a genome graph](#plot-a-genome-graph)
   - [Check the sequence of nodes of interest](#check-the-sequence-of-nodes-of-interest)
   - [Show gene models that may be interrupted by some sequences/nodes in some samples](#show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples)
-- [How to use desktop-based panGraphViewer](#how-to-use-desktop-based-pangraphviewer)
+- [How to use desktop-based PanGraphViewer](#how-to-use-desktop-based-pangraphviewer)
   - [Load Files for Graph Visualization](#load-files-for-graph-visualization)
     - [GFA](#gfa)
     - [VCF](#vcf)
@@ -26,13 +26,13 @@
   - [Genome Graph](#genome-graph)
   - [Check node information](#check-node-information)
   - [Display gene models that may be interrupted in some samples](#display-gene-models-that-may-be-interrupted-in-some-samples)
-- [How to use web browser-based panGraphViewer](#how-to-use-web-browser-based-pangraphviewer)
+- [How to use web browser-based PanGraphViewer](#how-to-use-web-browser-based-pangraphviewer)
 
 <div style="page-break-after: always;"></div>
 
-## Workflow for using panGraphViewer
+## Workflow for using PanGraphViewer
 
-Thank you for choosing panGraphViewer. Hope you can find our tool is useful for your study. In this section, we will introduce a general ``workflow`` (see the figure below) that can be used to explore ``panGraphViewer``.
+Thank you for choosing PanGraphViewer. Hope you can find our tool is useful for your study. In this section, we will introduce a general ``workflow`` (see the figure below) that can be used to explore ``PanGraphViewer``.
 
 <p align="center">
   <img width="700" src="src/workflow.jpg" alt="workflow">
@@ -48,9 +48,9 @@ There are three key functions that we would like to emphasize.
 ### Plot a genome graph
 Depending on the purpose and preference, users can install either application on their platform.
 
-* Before starting the application, firstly, users need to prepare an ``rGFA`` file, a ``GFA`` file or a ``VCF`` file that can be directly imported into the application. An output directory is also needed when processing the analyses. 
+* Before starting the application, firstly, users need to prepare an ``rGFA`` file, a ``GFA_v1`` file or a ``VCF`` file that can be directly imported into the application. An output directory is also needed when processing the analyses. 
 
-* After specifying a needed file and an output directory, users can start to parse the file and then the graph information underlying would be stored in the memory. Users can adjust their purpose to decide which chromosome/sequence or a segment of it can be displayed in the display canvas by specifying the ``backbone``, ``chromosome/sequence`` name and ``coordinates``. 
+* After specifying a needed file and an output directory, users can start to parse the file and then the graph information underlying would be stored in the memory. Users can adjust their purpose to decide which chromosome/sequence or a segment of it can be displayed in the display canvas by specifying the ``backbone``, ``chromosome/sequence`` name, ``coordinates`` or "nodeIDs".. 
 
 * Once the graph is displayed, users can use, for example, the ``mouse`` to zoom in and out to explore the graph. Hover information will show in the canvas if users move the ``mouse`` to the node.
 
@@ -68,7 +68,7 @@ If users have the annotation file for the ``backbone`` sample, they can check ge
 
 <div style="page-break-after: always;"></div>
 
-## How to use desktop-based panGraphViewer
+## How to use desktop-based PanGraphViewer
 
 For the ``desktop-based`` application, once it is opened as shown below, users can follow the following steps to explore the program.
 <p align="center">
@@ -79,7 +79,7 @@ For the ``desktop-based`` application, once it is opened as shown below, users c
 Here we provide two options to let users select if they want to explore a ``GFA``-based graph or a ``VCF``-based graph.
 
 #### GFA
-When selecting to plot a ``GFA``-based graph, an ``rGFA`` file or a ``GFA`` file is needed. Users can click the ``Select`` button to specify the file and then select an output directory to perform the analyses.
+When selecting to plot a ``GFA``-based graph, an ``rGFA`` file or a ``GFA_v1`` file is needed. Users can click the ``Select`` button to specify the file and then select an output directory to perform the analyses.
 
 <p align="center">
   <img width="320" src="src/load_gfa_d.jpg" alt="load_gfa_d">
@@ -206,9 +206,9 @@ We provide two ways to check the node information.
     <img width="320" src="src/aNodes.jpg" alt="aNodes">
   </p>
 
-  * In the dropdown menu, all nodes in the entire graph will be listed. Users can select the node that they want to check or remove it from the selected list.
+  * In the dropdown menu, the first 20000 nodes in the entire graph will be listed. Users can select the node that they want to check or remove it from the selected list.
   * Users can also type the node id in the ``List of the selected node(s)`` panel by lines
-  * Once clicking the ``Check`` button, the program will show the selected nodes in ``fasta`` format with a header similar to the one shown in the ``hover`` box. However, the sequence would be the completed sequence of the node. 
+  * Once clicking the ``Check/Plot`` button, the program will pop out a diag box asking if users want to browse the sequences of selected nodes or the graph built by the selected nodes. Users can decide by click the corresponding button. 
   * Users can also click the ``Save the Sequences`` button to save the ``fasta`` file to the output directory. Users can import the saved sequence file to other programs, such as ``NCBI-blast`` for downstream analyses.
   
   Please **note** that by default we only allow a sequence display with <= ``1000000`` bp in length. The reason to do this is that if a large sequence is needed to display, it would take a long time to show. Users can change the setting in ``Settings``--> ``Graph Modification`` if they really want to display a large sequence. 
@@ -236,9 +236,9 @@ After clicking the ``Plot`` button, a plot will show in the display canvas.
 
 <div style="page-break-after: always;"></div>
 
-## How to use web browser-based panGraphViewer
+## How to use web browser-based PanGraphViewer
 
-After the installation of the web-based panGraphViewer, users can follow ``README`` to open it. The login interface is like:
+After the installation of the web-based PanGraphViewer, users can follow ``README`` to open it. The login interface is like:
 
 <p align="center">
   <img width="320" src="src/webLogin.jpg" alt="application-web">
@@ -276,4 +276,4 @@ Once entering the login page, the admin can create accounts for either groups or
 </p>
 
 ---
-Enjoy using panGraphViewer!
+Enjoy using PanGraphViewer!

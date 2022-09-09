@@ -705,7 +705,7 @@ class Ui_panGraphViewer(object):
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" color:#d1d1d1;\">List of the selected node(s)</span></p></body></html>"))
-        self.checkNodesInfo.setText(_translate("panGraphViewer", "Check"))
+        self.checkNodesInfo.setText(_translate("panGraphViewer", "Check / Plot"))
         self.clearNodeList.setText(_translate("panGraphViewer", "Clear "))
         self.saveNodesInfo.setText(_translate("panGraphViewer", "Save the Sequences"))
         self.nodeStatus.setText(_translate("panGraphViewer", "Idle"))
@@ -720,7 +720,7 @@ class Ui_panGraphViewer(object):
         self.bedParseStatus.setText(_translate("panGraphViewer", "Idle"))
         self.checkbox.setText(_translate("panGraphViewer", "Load File(s) for Graph Visualization"))
         self.selectOutPath.setText(_translate("panGraphViewer", "Select"))
-        self.label_8.setText(_translate("panGraphViewer", "Parse GFA"))
+        self.label_8.setText(_translate("panGraphViewer", "Parse (r)GFA"))
         self.label_2.setText(_translate("panGraphViewer", "The GFA File"))
         self.status.setText(_translate("panGraphViewer", "Idle"))
         self.outDirLabel.setText(_translate("panGraphViewer", "Output Directory"))

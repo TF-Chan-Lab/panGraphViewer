@@ -2,29 +2,22 @@
 
 import os
 import sys
-from attrdict import AttrDict
+import shlex
+import subprocess
 import re
 from configparser import ConfigParser
-from natsort import natsorted
-import subprocess
-import shlex
+import shutil
 
-import logging
-
-#============================= Function =================================
-##logging info
-DEBUG="" #change it when debugging
-logFormat = "%(asctime)s [%(levelname)s] %(message)s"
-level = "DEBUG" if DEBUG != "" else "INFO"
-logging.basicConfig( stream=sys.stderr, level=level, format=logFormat )
-#========================================================================
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 class VCF2rGFAHelper:
-    def __init__(self, fasta, vcf, outDir, forceUseAlt=False):
+    def __init__(self, fasta, vcf, outDir):
         try:
             import pysam
 
-            if forceUseAlt: raise ModuleNotFoundError()
             self.usePysam = True
         except ModuleNotFoundError:
             from pyfaidx import Fasta
@@ -35,10 +28,17 @@ class VCF2rGFAHelper:
 
         if not self.usePysam:
             if sys.platform == 'win32':
-                toolsPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'panGraphViewerApp', 'thirdPartyTools', 'SAMtools')
-                self.ENV['SAMTOOLS'] = os.path.join(toolsPath, 'samtools.exe')
-                self.ENV['BCFTOOLS'] = os.path.join(toolsPath, 'bcftools.exe')
-                self.ENV['BGZIP'] = os.path.join(toolsPath, 'bgzip.exe')
+                self.ENV['SAMTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'thirdPartyTools', 'SAMtools', 'samtools.exe')
+                self.ENV['BCFTOOLS'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'thirdPartyTools', 'SAMtools', 'bcftools.exe')
+                self.ENV['BGZIP'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'thirdPartyTools', 'SAMtools','bgzip.exe')
+            else:
+                self.ENV['SAMTOOLS'] = shutil.which('samtools')
+                self.ENV['BCFTOOLS'] = shutil.which('bcftools')
+                self.ENV['BGZIP'] = shutil.which('bgzip')
+
+            self.samtools = self.ENV['SAMTOOLS']
+            self.bcftools = self.ENV['BCFTOOLS']
+            self.bgzip = self.ENV['BGZIP']
 
             for name in self.ENV:
                 if not os.path.isfile(self.ENV[name]):
@@ -47,27 +47,35 @@ class VCF2rGFAHelper:
         self.func = self.pysamFunc if self.usePysam else self.altFunc
 
         self.outDir = outDir
-        os.makedirs(self.outDir, mode=0o777, exist_ok=True)
+        try:
+            os.makedirs(self.outDir, mode=0o777, exist_ok=True)
+        except:
+            pass
 
         self.fasta = fasta
+        #self.fasta_fai = f'{self.outDir}/{os.path.basename(self.fasta)}.fai'
         self.fasta_fai = f'{self.fasta}.fai'
         self.vcf = vcf
         self.vcf_sorted = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}_sorted')
         self.vcf_gz = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}.gz')
-        self.vcf_gz_tbi = f'{self.vcf_gz}.tbi'
+        self.vcf_gz_tbi = os.path.join(self.outDir, f'{self.vcf_gz}.tbi')
+        self.tempFiles = []
 
-        self.tempFiles = [self.fasta_fai, self.vcf_sorted, self.vcf_gz, self.vcf_gz_tbi]
+        if not self.usePysam:
+            cmd = f'"{self.bcftools}" view "{self.vcf}" -h | grep ^#CHROM'
+            self.vcfHeader = ['CHROM']+self.runCmdLine(shlex.split(cmd))[-1].split('\t')[1:]
 
-    def preprocess(self, force=True):
-        if force:
-            self.removeTempFiles()
-
+    def preprocess(self, force=False):
         if self.fasta:
             if not os.path.isfile(self.fasta_fai) or os.path.getmtime(self.fasta)>os.path.getmtime(self.fasta_fai):
+                self.tempFiles.append(self.fasta_fai)
                 self.indexFasta()
         if not os.path.isfile(self.vcf_gz) or os.path.getmtime(self.vcf)>os.path.getmtime(self.vcf_gz):
+            self.tempFiles.append(self.vcf_sorted)
+            self.tempFiles.append(self.vcf_gz)
             self.sortAndCompressVCF()
         if not os.path.isfile(self.vcf_gz_tbi) or os.path.getmtime(self.vcf_gz)>os.path.getmtime(self.vcf_gz_tbi):
+            self.tempFiles.append(self.vcf_gz_tbi)
             self.indexVCF()
 
     def getVcfSamples(self):
@@ -84,15 +92,8 @@ class VCF2rGFAHelper:
 
         return vcfSamples
 
-    def runCmdLine(self, cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
-        cmd_list = [str.strip('"').strip("'") for str in shlex.split(cmd, posix=False)]
-
-        ret = subprocess.run(cmd_list, shell=False, stdout=stdout, stderr=stderr, stdin=stdin, text=True)
-
-        if ret.returncode:
-            logging.error(f'cmd: {cmd}')
-            logging.error(f'stderr: {ret.stderr.strip()}')
-
+    def runCmdLine(self, cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        ret = subprocess.run(cmd, shell=True, stdout=stdout, stderr=stderr, stdin=stdin, text=True)
         return ret.stdout.strip().split('\n') if ret.stdout else ret.stdout
 
     def pysamFunc(self, param):
@@ -102,8 +103,15 @@ class VCF2rGFAHelper:
         output = ''
 
         if action == 'sortAndCompressVCF':
-            self.sortVcf(self.vcf, self.vcf_sorted)
+            # should run both sort and compress together. to-be-fixed
+
+            cmd = f'grep "#" "{self.vcf}" > "{self.vcf_sorted}"'
+            os.system(cmd)
+            cmd = f'grep -v "#" "{self.vcf}" | sort -k1V -k2 >> "{self.vcf_sorted}"'
+            os.system(cmd)
+
             pysam.tabix_compress(self.vcf_sorted, self.vcf_gz, force=True)
+
         elif action == 'indexFasta':
             pysam.faidx(self.fasta, force=True)
         elif action == 'indexVCF':
@@ -132,16 +140,15 @@ class VCF2rGFAHelper:
         cmd, output = '', ''
 
         if action == 'sortAndCompressVCF':
-            self.sortVcf(self.vcf, self.vcf_sorted)
-            with open(self.vcf_gz, 'wb') as f_vcf_gz:
-                cmd = f'{bgzip} -c "{self.vcf_sorted}"'
-                self.runCmdLine(cmd, stdout=f_vcf_gz)
+            cmd = f'(grep # "{self.vcf}" && grep -v # "{self.vcf}" | sort -k1V -k2) | "{bgzip}" > "{self.vcf_gz}"'
+            output = self.runCmdLine(shlex.split(cmd))
+
         elif action == 'indexFasta':
-            cmd = f'{samtools} faidx "{self.fasta}"'
-            output = self.runCmdLine(cmd)
+            cmd = f'"{samtools}" faidx "{self.fasta}"'
+            output = self.runCmdLine(shlex.split(cmd))
         elif action == 'indexVCF':
-            cmd = f'{bcftools} index -t "{self.vcf_gz}"'
-            output = self.runCmdLine(cmd)
+            cmd = f'"{bcftools}" index -t "{self.vcf_gz}"'
+            output = self.runCmdLine(shlex.split(cmd))
         elif action == 'fetchFasta':
             chr, start, end, env = param['chr'], param['start'], param['end'], param['env']
 
@@ -151,39 +158,37 @@ class VCF2rGFAHelper:
         elif action == 'fetchVCF':
             chr, start, end = param['chr'], param['start'], param['end']
 
-            cmd = f'{bcftools} view "{self.vcf_gz}" {chr}:{start}-{end} -U -H'
-            output = self.runCmdLine(cmd)
+            cmd = f'"{bcftools}" view "{self.vcf_gz}" "{chr}:{start}-{end}" -U -H'
+            output = self.runCmdLine(shlex.split(cmd))
         else:
             print(f'ERROR: invalid action: {action}')
             return None
 
         if action == 'fetchVCF':
-            vcfColNames = self.getVcfColNames()
-
             records = []
             for vcfLine in output:
-                record = self.formatVcfLine(vcfLine.split('\t'), vcfColNames)
+                record = self.formatVcfLine(vcfLine.split('\t'))
                 records.append(record)
 
             output = records
 
         return output
 
-    def formatVcfLine(self, rec_raw, colNames):
+    def formatVcfLine(self, rec_raw):
         row  = [field if i<7 else dict(x.split("=") if '=' in x else [x,1] for x in field.split(";")) if i==7
                      else field.split(':') if i==8 else AttrDict(zip(rec_raw[8].split(':'), field.split(':')))
                      for i,field in enumerate(rec_raw)]
 
         record = AttrDict()
         for i in range(9):
-            record[colNames[i].lower()] = row[i]
+            record[self.vcfHeader[i].lower()] = row[i]
 
         record['pos'] = int(record['pos'])
         record['alts'] = record['alt'].split(',')
         if 'END' in record['info']: record['stop'] = int(record['info']['END'])
         if 'STRLEN' in record['info']: record['info']['STRLEN'] = int(record['info']['STRLEN'])
 
-        record.samples = {colNames[9+i]:field for i,field in enumerate(row[9:])}
+        record.samples = {self.vcfHeader[9+i]:field for i,field in enumerate(row[9:])}
         for sampleName in record.samples:
             sample = record.samples[sampleName]
             gt = re.split('/|\|', sample['GT'])
@@ -232,41 +237,19 @@ class VCF2rGFAHelper:
             return f'{padding}{self.fetchFasta(chr, start, end, env).upper()}'
 
     def getVcfChroms(self):
-        vcfChroms = {}
-        with open(self.vcf) as f:
-            for line in f:
-                if line[0] == '#':
-                    continue
-
-                fields = line.split('\t')
-                vcfChroms[fields[0]] = 1
-
-        return sorted(list(vcfChroms.keys()))
-
-    def getVcfColNames(self):
-        found = None
-        with open(self.vcf) as f:
-            for line in f:
-               if line[0] != '#' :
-                   break
-
-               if line.startswith('#CHROM'):
-                   found = line.strip()
-                   break
-
-        return found[1:].split('\t') if found else None
-
-    def sortVcf(self, vcf, vcf_sorted):
-        vcfLines = {}
-        with open(vcf) as f_in, open(vcf_sorted, 'w') as f_out:
-            for line in f_in:
-                if line[0] == '#':
-                    f_out.write(line)
-                else:
-                    fields = line.strip().split('\t')
-                    vcfLines[f'{fields[0]}_{fields[1]}'] = line
-            for entry in natsorted(vcfLines):
-                 f_out.write(vcfLines[entry])
+        if sys.platform == "win32":
+            cmd = f'cat "{self.vcf}" | grep -v # | awk "{{print $1}}" | sort | uniq'
+            vcfChroms = self.runCmdLine(shlex.split(cmd))
+        else:
+            cmd = f'cat "{self.vcf}" | grep -v "#" | awk \'{{print $1}}\' | sort | uniq > "{self.vcf}.chrs"'
+            os.system(cmd)
+            vcfChroms = []
+            with open(f"{self.vcf}.chrs", 'r') as chrs:
+                for line in chrs:
+                    line = line.strip()
+                    vcfChroms.append(line)
+            os.remove(f"{self.vcf}.chrs")
+        return vcfChroms
 
     def getRefChromsFromVcf(self):
         refChroms = {}
@@ -295,31 +278,6 @@ class VCF2rGFAHelper:
     def removeTempFiles(self):
         for file in self.tempFiles:
             try:
-                print(f'removing {file}')
                 os.remove(file)
             except:
                 pass
-
-    def test(self):
-        self.removeTempFiles()
-        self.preprocess(force=True)
-        for file in self.tempFiles:
-            print(file)
-            filesize = os.path.getsize(file)
-            print(filesize)
-
-if __name__=="__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description='helper functions for vcf2rGFA')
-    parser.add_argument('-v', dest='vcf', help='the vcf file', type=str)
-    parser.add_argument('-o', dest='outDir', help='the output directory', type=str)
-    # optional
-    parser.add_argument('-f', dest='fasta', help='the fasta file', type=str)
-
-    args = parser.parse_args()
-
-    if None not in [args.vcf, args.outDir]:
-        VCF2rGFAHelper(args.fasta, args.vcf, args.outDir, forceUseAlt=True).test()
-    else:
-        print('\n%s\n' % parser.print_help())

@@ -3,18 +3,25 @@
 <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
+<!--
     <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+-->
+    <script src="static/cy/js/jquery-2.0.3.min.js"></script>
+    <script src="static/cy/js/bluebird.js"></script>
+    <script src="static/cy/js/fetch.min.js"></script>
+    <script src="static/cy/js/cytoscape.min.js"></script>
 
 <!--
-    <script src="cytoscape-context-menus.js"></script>
-    <link rel="stylesheet" type="text/css" href="cytoscape-context-menus.css">
--->
     <script src="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.js"></script>
     <link href="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.css" rel="stylesheet" type="text/css" />
+-->
+    <script src="static/cy/js/cytoscape-context-menus.js"></script>
+    <link href="static/cy/css/cytoscape-context-menus.css" rel="stylesheet" type="text/css" />
 
+<!--
     <script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@1.0.4/cytoscape-popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
@@ -23,6 +30,18 @@
     <script src="https://unpkg.com/layout-base/layout-base.js"></script>
     <script src="https://unpkg.com/cose-base/cose-base.js"></script>
     <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/js/all.min.js"></script>
+-->
+    <script src="static/cy/js/popper.js"></script>
+    <script src="static/cy/js/cytoscape-popper.js"></script>
+    <script src="static/cy/js/index.all.min.js"></script>
+    <link href="static/cy/css/index.css" rel="stylesheet" type="text/css" />
+
+    <script src="static/cy/js/layout-base.js"></script>
+    <script src="static/cy/js/cose-base.js"></script>
+    <script src="static/cy/js/cytoscape-fcose.js"></script>
+    <script src="static/cy/js/all.min.js"></script>
 
     <style>
         body {
@@ -75,8 +94,15 @@
 }
 </style>
 
+<script>
+function repos_cy() {
+  document.getElementById(`cy`)._cyreg.cy.fit(20);
+}
+</script>
+
     <center>
         <h1>{%title%}</h1>
+        <button type="button" class="btn btn-default repos_btn" onclick="repos_cy()"><i class="fa fa-sync-alt" aria-hidden="true"></i></button>
         <div class="myDIV">Legend (mouseover here to show)</div>
         <div class="hide">
 <table>
@@ -92,7 +118,7 @@
         </div>
     </center>
     <div id="cy"></div>
-    <div id="loading"><img id="loading-image" src="loader.gif" alt="Loading..." width="150" height="150" /></div>
+    <div id="loading"><img id="loading-image" src="static/images/loader.gif" alt="Loading..." width="150" height="150" /></div>
 </body>
 <script>
     document.addEventListener('DOMContentLoaded', function(){
@@ -147,15 +173,21 @@
                 {
                     selector: 'edge',
                     style: {
-                        'width': 0.5,
+                        'source-label': 'data(sourceLabel)',
+                        'target-label': 'data(targetLabel)',
+                        'width': 'data(weight)',
                         'opacity': 0.5,
                         'line-color':'data(color)',
                         'arrow-scale': 1.1,
                         'curve-style': 'unbundled-bezier',
                         'control-point-distance': 7,
                         'control-point-weight': '0.5',
-                        'target-arrow-shape':'triangle-backcurve',
+                        'target-arrow-shape':'data(arrow)',
                         'target-arrow-color':'data(color)',
+                        'font-size':'20px',
+                        'color':'red',
+                        'source-text-offset':'7px',
+                        'target-text-offset':'7px',
                     }
                 },
 
@@ -232,9 +264,35 @@
         cy.nodes().unbind('mouseout');
         cy.nodes().bind('mouseout', (event) => event.target.tippy.hide());
 
+        var minX=null, minY=null, maxX=null, maxY=null;
+        cy.nodes().forEach(function(ele) {
+            var x = ele.position().x;
+            var y = ele.position().y;
+
+            if (!minX || x < minX) minX = x;
+            if (!maxX || x > maxX) maxX = x;
+            if (!minY || y < minY) minY = y;
+            if (!maxY || y > maxY) maxY = y;
+        });
+        minX -= 50; minY -= 50;
+        maxX += 50; maxY += 50;
+        edge_weight = (maxX - minX)/1000;
+        color = '#777777';
+        shape = 'ellipse';
+        weight = 75;
+        cy.add([{group:'nodes', data:{ id:'nodeA', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:minX, y:minY}},
+                {group:'nodes', data:{ id:'nodeB', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:minX, y:maxY}},
+                {group:'nodes', data:{ id:'nodeC', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:maxX, y:maxY}},
+                {group:'nodes', data:{ id:'nodeD', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:maxX, y:minY}},
+
+                {group:'edges', data:{ id:'border1', weight:edge_weight, source:'nodeA', target:'nodeB', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+                {group:'edges', data:{ id:'border2', weight:edge_weight, source:'nodeB', target:'nodeC', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+                {group:'edges', data:{ id:'border3', weight:edge_weight, source:'nodeC', target:'nodeD', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+                {group:'edges', data:{ id:'border4', weight:edge_weight, source:'nodeD', target:'nodeA', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+        ]);
     }
 </script>
-<script src="images.js"></script>
+<script src="static/images.js"></script>
 <script>
 var colors = {%colors%};
 var shapes = {%shapes%};

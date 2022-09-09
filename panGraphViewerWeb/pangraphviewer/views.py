@@ -11,7 +11,8 @@ import time
 from django.conf import settings
 
 from pangraphviewer.utilities import *
-from pangraphviewer.panGraph import *
+#from pangraphviewer.panGraph import *
+from pangraphviewer.panGraphWeb import *
 from pangraphviewer.gfa2rGFA import *
 
 from .models import *
@@ -25,6 +26,11 @@ from os.path import isfile, isdir, join
 from django.db import IntegrityError, transaction
 
 work_base_dir = None
+
+upload_file_ext = {'gfa':['.gfa','.rgfa'],
+                   'vcf':['.vcf'],
+                   'fasta':['.fa','.fasta','.fna'],
+                   'bed':['.bed','.gtf','.gff','.gff3']}
 
 @login_required
 def get_work_dir(request, folder_list=[], file_name=''):
@@ -55,7 +61,7 @@ def get_uploaded_list(request):
     file_type = request.POST.get('file_type','')
 
     work_dir = get_work_dir(request, [file_type])
-    files = [f for f in listdir(work_dir) if isfile(join(work_dir, f))]
+    files = sorted([name for name in listdir(work_dir) if isfile(join(work_dir, name)) and f".{name.split('.')[-1].lower()}" in upload_file_ext[file_type]])
     status = 200
 
     return JsonResponse({'files':files,'work_dir':work_dir}, safe=False, status=status)
@@ -70,6 +76,7 @@ def getdata(request):
     chr = request.POST.get('chr','')
     start = int(request.POST.get('start',0)) if request.POST.get('start') else None
     end = int(request.POST.get('end',0)) if request.POST.get('end') else None
+    node_ids = request.POST.get('node_ids','')
     #sampleList = request.POST.getlist('sample_list[]','')
     sampleList = None
 
@@ -96,8 +103,14 @@ def getdata(request):
     else:
         gfa = get_work_dir(request, ['gfa'], gfa)
 
-    graph = PanGraph(gfa, outdir=get_work_dir(request))
-    drawGraphResult = graph.drawGraph(sampleList, chr, start, end, isGenHtml=False)
+    if node_ids:
+        nodeIdDict = {id.strip():1 for id in node_ids.split()}
+        graph = PanGraph(gfa, outdir=get_work_dir(request), nodeIdDict=nodeIdDict)
+        drawGraphResult = graph.drawGraphByNodeId(sampleList, targetChr=chr, nodeIdDict=nodeIdDict, isGenHtml=False)
+    else:
+        graph = PanGraph(gfa, outdir=get_work_dir(request), parseRGFA=False)
+        drawGraphResult = graph.drawGraph(sampleList, chr, start, end, isGenHtml=False)
+
     nodeCount = len(drawGraphResult['nodes_data'])
     if nodeCount > graph.maxNodesLimit:
         error = f"The num. of nodes in the selected region is '{nodeCount}', which is bigger than the limit '{graph.maxNodesLimit}' in settings. Please modify Start/End Position to limit the number of nodes."
@@ -123,8 +136,7 @@ def parse_gfa(request):
     gfa = get_work_dir(request,['gfa'], gfa)
 
     now = datetime.datetime.now()
-    output_folder_list = ['output',now.strftime("%Y-%m-%d-%H_%M_%S")]
-    graph = PanGraph(gfa, outdir=get_work_dir(request, output_folder_list))
+    graph = PanGraph(gfa, outdir=get_work_dir(request))
 
     warning, error = '', ''
     if graph.illegalrGFA:
@@ -183,6 +195,7 @@ def parse_bed(request):
     bed = get_work_dir(request, ['bed'], bed)
 
     #graph = PanGraph(gfa, outdir=get_work_dir(request), parseRGFA=False)
+    """
     graph = PanGraph(gfa, outdir=get_work_dir(request))
     results = graph.parseBedGff(bed)
     bed_contigs = results['bed_contigs']
@@ -199,6 +212,22 @@ def parse_bed(request):
     graph.genGraph()
     #graph.updateNodes()
     data = graph.nodeGeneOverlap(bed, 2)
+
+    results = {}
+    results['status'] = 0
+    results['gene'] = sorted(list(data.keys()))
+    results['gene_info'] = data
+    results['time'] = time.time() - start_time
+    results['warning'] = warning
+    results['error'] = error
+    """
+
+    graph = PanGraph(gfa, outdir=get_work_dir(request), parseRGFA=False)
+    graph.loadBedGff(bed)
+    chromDict = {graph.bed[geneId]['Chr']:1  for geneId in graph.bed }
+    graph.loadLenBeforeDict(chromDict)
+
+    data = graph.nodeGeneOverlap(overlapNodeCountThreshold=2)
 
     results = {}
     results['status'] = 0
@@ -229,6 +258,7 @@ def graph(request):
         'start': start,
         'end': end,
         'plot': plot,
+        'upload_file_ext': {type:','.join(upload_file_ext[type]) for type in upload_file_ext}
     }
 
     return render(request, template_name, context=context)
@@ -281,8 +311,8 @@ def config(request):
 def getnodes(request):
     results = []
 
-    gfa = request.GET.get('gfa','')
-    seqname = request.GET.get('seqname','').split(',')
+    gfa = request.POST.get('gfa','')
+    seqname = request.POST.get('seqname','').replace(',',' ').split()
 
     gfa = get_work_dir(request, ['gfa'], gfa)
     panGraph = PanGraph(gfa, os.path.dirname(gfa), parseRGFA=False)
@@ -290,10 +320,10 @@ def getnodes(request):
 
     for nodeId in nodes:
         node = nodes[nodeId]
-        title = f"NodeId: {nodeId}; Resource: {node['sample']}_{node['chr']}; Len: {node['len']}"
-        if node['rank'] == '0':
-            title += f"; Pos: {node['lenBefore']} - {node['lenBefore']+node['len']-1}"
-        results.append({'seqname':nodeId, 'title':title, 'seq':node['seq']})
+        title = f"NodeId: {nodeId}; Resource: {node[NODE.sample]}_{node[NODE.chr]}; Len: {node[NODE.len]}"
+        if node[NODE.rank] == '0':
+            title += f"; Pos: {node[NODE.lenBefore]} - {node[NODE.lenBefore]+node[NODE.len]-1}"
+        results.append({'seqname':nodeId, 'title':title, 'seq':node[NODE.seq]})
 
     return results
 
@@ -480,7 +510,7 @@ def draw_overlap_gene(request):
     gfa = get_work_dir(request, ['gfa'], gfa)
     bed = get_work_dir(request, ['bed'], bed)
 
-    graph = PanGraph(gfa, outdir=get_work_dir(request, ['gene']))
+    graph = PanGraph(gfa, outdir=get_work_dir(request, ['gene']), parseRGFA=False)
     graph.loadBedGff(bed)
     graph.overlapGenes(gene_id)
     graph.drawOverlapGenes(gene_id)
@@ -495,26 +525,26 @@ def check_node_id(request):
     start_time = time.time()
 
     gfa = request.POST.get('gfa','')
-    node_ids = request.POST.get('input_ids','')
+    input_ids = request.POST.get('input_ids','')
 
-    if not gfa or not node_ids:
+    if not gfa or not input_ids:
         return JsonResponse({'error':True, 'msg': 'missing value'}, safe=False, status=400)
 
     gfa = get_work_dir(request, ['gfa'], gfa)
-    graph = PanGraph(gfa, outdir=get_work_dir(request, ['gene']))
-    gfaNodeIds = {nodeId:1 for nodeId in graph.inf['NodeID']}
+    pangraph = PanGraph(gfa, outdir=get_work_dir(request, ['gene']), parseRGFA=False)
+    node_ids = [id.strip() for id in input_ids.split() if id.strip()]
+    checkedNodeIds = pangraph.getNodeFromRGFA(node_ids)
 
-    inputNodeIds = node_ids.replace(' ', '').split(',')
-    checkedNodeIds = {}
-    for nodeId in inputNodeIds:
-       if nodeId in gfaNodeIds:
-          checkedNodeIds[nodeId] = 1
+    missing = list(set(node_ids) - set(list(checkedNodeIds.keys())))
+    if missing:
+        return JsonResponse({'error':True, 'msg': f'Some input node ids cannot be found: {missing[0]} ...'}, safe=False, status=400)
 
-    checkedNodeIds = sorted(list(checkedNodeIds.keys()))
+    # keep the order of node IDs in input_ids
+    outputNodeIds = [nodeId for nodeId in node_ids if nodeId in checkedNodeIds]
 
     results = {}
     results['status'] = 0
-    results['checked_node_ids'] = ','.join(checkedNodeIds)
+    results['checked_node_ids'] = '\n'.join(outputNodeIds)
     #results['time'] = time.time() - start_time
 
     return JsonResponse(results, status=200)

@@ -1,18 +1,15 @@
-<head>
 {% load static %}
+<head>
   <title>panGraph</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="{% static 'pangraphviewer/js/jquery.min.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/bootstrap.bundle.min.js' %}"></script>
+<link href="{% static "pangraphviewer/css/bootstrap.min.css" %}" rel="stylesheet" />
 
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript %}
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
+<link href="{% static "pangraphviewer/css/vis.css" %}" rel="stylesheet" />
+<script src="{% static 'pangraphviewer/js/vis-network.min.js' %}"></script>
 
 <link href="{% static "pangraphviewer/css/style.css" %}" rel="stylesheet" />
 <link rel="stylesheet" href={% static 'pangraphviewer/css/upload.css' %}>

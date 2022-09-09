@@ -2,11 +2,11 @@
 
 ### How to install this application
 
-You may follow the instruction [here](../README.md#desktop-based-pangraphviewer) to install this application.
+You may follow the instruction [here](https://github.com/TF-Chan-Lab/panGraphViewer/wiki/Installation) to install this application.
 
 ### How to open the application
 
-You may follow the instruction [here](../README.md#start-the-desktop-based-version) to start the application.
+You may follow the instruction [here](https://github.com/TF-Chan-Lab/panGraphViewer/wiki/Start-the-program) to start the application.
 
 ### How to use this application
 

@@ -3,9 +3,6 @@ const csrf = document.getElementsByName('csrfmiddlewaretoken')
 
 var upload_file_url = document.getElementById('upload_file_url').value
 
-upload_add_listener_change('vcf');
-upload_add_listener_change('fasta');
-
 function upload_add_listener_change(prefix) {
     upload = document.getElementById(prefix+'_upload')
     upload.onchange = function(e) {
@@ -114,9 +111,16 @@ $('#download-btn').click(function() {
 });
 
 function download_rgfa() {
+    /*
     var rgfa = document.getElementById('rgfa_path').value;
     var url = 'download_rgfa?rgfa=' + rgfa;
     window.open(url);
+    */
+    action = 'download';
+    file_name = document.getElementById('rgfa_path').value;
+    if (!file_name) return;
+
+    manage_file(action, file_name, 'gfa');
 }
 
 function update_alert_box(msg, alert_type) {
@@ -208,3 +212,6 @@ function manage_file(action, file_name, file_type, select_id) {
         });
     }
 }
+
+upload_add_listener_change('vcf');
+upload_add_listener_change('fasta');

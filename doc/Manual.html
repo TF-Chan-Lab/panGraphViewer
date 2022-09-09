@@ -1,723 +1,536 @@
-<!doctype html>
-<html>
-<head>
-<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
-
-<link href='https://fonts.loli.net/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext' rel='stylesheet' type='text/css' /><link href='https://fonts.loli.net/css?family=Lato:900,300&subset=latin-ext' rel='stylesheet' type='text/css' /><style type='text/css'>html {overflow-x: initial !important;}:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #B5D6FC; --select-text-font-color: auto; --monospace: "Lucida Console",Consolas,"Courier",monospace; --title-bar-height: 20px; }
-.mac-os-11 { --title-bar-height: 28px; }
-html { font-size: 14px; background-color: var(--bg-color); color: var(--text-color); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-body { margin: 0px; padding: 0px; height: auto; inset: 0px; font-size: 1rem; line-height: 1.42857143; overflow-x: hidden; background-image: inherit; background-size: inherit; background-attachment: inherit; background-origin: inherit; background-clip: inherit; background-color: inherit; tab-size: 4; background-position: inherit; background-repeat: inherit; }
-iframe { margin: auto; }
-a.url { word-break: break-all; }
-a:active, a:hover { outline: 0px; }
-.in-text-selection, ::selection { text-shadow: none; background: var(--select-text-bg-color); color: var(--select-text-font-color); }
-#write { margin: 0px auto; height: auto; width: inherit; word-break: normal; word-wrap: break-word; position: relative; white-space: normal; overflow-x: visible; padding-top: 36px; }
-#write.first-line-indent p { text-indent: 2em; }
-#write.first-line-indent li p, #write.first-line-indent p * { text-indent: 0px; }
-#write.first-line-indent li { margin-left: 2em; }
-.for-image #write { padding-left: 8px; padding-right: 8px; }
-body.typora-export { padding-left: 30px; padding-right: 30px; }
-.typora-export .footnote-line, .typora-export li, .typora-export p { white-space: pre-wrap; }
-.typora-export .task-list-item input { pointer-events: none; }
-@media screen and (max-width: 500px) { 
-  body.typora-export { padding-left: 0px; padding-right: 0px; }
-  #write { padding-left: 20px; padding-right: 20px; }
-  .CodeMirror-sizer { margin-left: 0px !important; }
-  .CodeMirror-gutters { display: none !important; }
-}
-#write li > figure:last-child { margin-bottom: 0.5rem; }
-#write ol, #write ul { position: relative; }
-img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
-button, input, select, textarea { color: inherit; font-family: inherit; font-size: inherit; font-style: inherit; font-variant-caps: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; }
-input[type="checkbox"], input[type="radio"] { line-height: normal; padding: 0px; }
-*, ::after, ::before { box-sizing: border-box; }
-#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p, #write pre { width: inherit; }
-#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p { position: relative; }
-p { line-height: inherit; }
-h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
-p { orphans: 4; }
-h1 { font-size: 2rem; }
-h2 { font-size: 1.8rem; }
-h3 { font-size: 1.6rem; }
-h4 { font-size: 1.4rem; }
-h5 { font-size: 1.2rem; }
-h6 { font-size: 1rem; }
-.md-math-block, .md-rawblock, h1, h2, h3, h4, h5, h6, p { margin-top: 1rem; margin-bottom: 1rem; }
-.hidden { display: none; }
-.md-blockmeta { color: rgb(204, 204, 204); font-weight: 700; font-style: italic; }
-a { cursor: pointer; }
-sup.md-footnote { padding: 2px 4px; background-color: rgba(238, 238, 238, 0.7); color: rgb(85, 85, 85); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; cursor: pointer; }
-sup.md-footnote a, sup.md-footnote a:hover { color: inherit; text-transform: inherit; text-decoration: inherit; }
-#write input[type="checkbox"] { cursor: pointer; width: inherit; height: inherit; }
-figure { overflow-x: auto; margin: 1.2em 0px; max-width: calc(100% + 16px); padding: 0px; }
-figure > table { margin: 0px; }
-tr { break-inside: avoid; break-after: auto; }
-thead { display: table-header-group; }
-table { border-collapse: collapse; border-spacing: 0px; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
-table.md-table td { min-width: 32px; }
-.CodeMirror-gutters { border-right-width: 0px; background-color: inherit; }
-.CodeMirror-linenumber { }
-.CodeMirror { text-align: left; }
-.CodeMirror-placeholder { opacity: 0.3; }
-.CodeMirror pre { padding: 0px 4px; }
-.CodeMirror-lines { padding: 0px; }
-div.hr:focus { cursor: none; }
-#write pre { white-space: pre-wrap; }
-#write.fences-no-line-wrapping pre { white-space: pre; }
-#write pre.ty-contain-cm { white-space: normal; }
-.CodeMirror-gutters { margin-right: 4px; }
-.md-fences { font-size: 0.9rem; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background-image: inherit; background-size: inherit; background-attachment: inherit; background-origin: inherit; background-clip: inherit; background-color: inherit; position: relative !important; background-position: inherit; background-repeat: inherit; }
-.md-fences-adv-panel { width: 100%; margin-top: 10px; text-align: center; padding-top: 0px; padding-bottom: 8px; overflow-x: auto; }
-#write .md-fences.mock-cm { white-space: pre-wrap; }
-.md-fences.md-fences-with-lineno { padding-left: 0px; }
-#write.fences-no-line-wrapping .md-fences.mock-cm { white-space: pre; overflow-x: auto; }
-.md-fences.mock-cm.md-fences-with-lineno { padding-left: 8px; }
-.CodeMirror-line, twitterwidget { break-inside: avoid; }
-.footnotes { opacity: 0.8; font-size: 0.9rem; margin-top: 1em; margin-bottom: 1em; }
-.footnotes + .footnotes { margin-top: 0px; }
-.md-reset { margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: top; text-decoration: none; text-shadow: none; float: none; position: static; width: auto; height: auto; white-space: nowrap; cursor: inherit; line-height: normal; font-weight: 400; text-align: left; box-sizing: content-box; direction: ltr; background-position: 0px 0px; }
-li div { padding-top: 0px; }
-blockquote { margin: 1rem 0px; }
-li .mathjax-block, li p { margin: 0.5rem 0px; }
-li blockquote { margin: 1rem 0px; }
-li { margin: 0px; position: relative; }
-blockquote > :last-child { margin-bottom: 0px; }
-blockquote > :first-child, li > :first-child { margin-top: 0px; }
-.footnotes-area { color: rgb(136, 136, 136); margin-top: 0.714rem; padding-bottom: 0.143rem; white-space: normal; }
-#write .footnote-line { white-space: pre-wrap; }
-@media print { 
-  body, html { border: 1px solid transparent; height: 99%; break-after: avoid; break-before: avoid; font-variant-ligatures: no-common-ligatures; }
-  #write { margin-top: 0px; padding-top: 0px; border-color: transparent !important; }
-  .typora-export * { -webkit-print-color-adjust: exact; }
-  .typora-export #write { break-after: avoid; }
-  .typora-export #write::after { height: 0px; }
-  .is-mac table { break-inside: avoid; }
-  .typora-export-show-outline .typora-export-sidebar { display: none; }
-}
-.footnote-line { margin-top: 0.714em; font-size: 0.7em; }
-a img, img a { cursor: pointer; }
-pre.md-meta-block { font-size: 0.8rem; min-height: 0.8rem; white-space: pre-wrap; background-color: rgb(204, 204, 204); display: block; overflow-x: hidden; }
-p > .md-image:only-child:not(.md-img-error) img, p > img:only-child { display: block; margin: auto; }
-#write.first-line-indent p > .md-image:only-child:not(.md-img-error) img { left: -2em; position: relative; }
-p > .md-image:only-child { display: inline-block; width: 100%; }
-#write .MathJax_Display { margin: 0.8em 0px 0px; }
-.md-math-block { width: 100%; }
-.md-math-block:not(:empty)::after { display: none; }
-.MathJax_ref { fill: currentcolor; }
-[contenteditable="true"]:active, [contenteditable="true"]:focus, [contenteditable="false"]:active, [contenteditable="false"]:focus { outline: 0px; box-shadow: none; }
-.md-task-list-item { position: relative; list-style-type: none; }
-.task-list-item.md-task-list-item { padding-left: 0px; }
-.md-task-list-item > input { position: absolute; top: 0px; left: 0px; margin-left: -1.2em; margin-top: calc(1em - 10px); border: none; }
-.math { font-size: 1rem; }
-.md-toc { min-height: 3.58rem; position: relative; font-size: 0.9rem; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
-.md-toc-content { position: relative; margin-left: 0px; }
-.md-toc-content::after, .md-toc::after { display: none; }
-.md-toc-item { display: block; color: rgb(65, 131, 196); }
-.md-toc-item a { text-decoration: none; }
-.md-toc-inner:hover { text-decoration: underline; }
-.md-toc-inner { display: inline-block; cursor: pointer; }
-.md-toc-h1 .md-toc-inner { margin-left: 0px; font-weight: 700; }
-.md-toc-h2 .md-toc-inner { margin-left: 2em; }
-.md-toc-h3 .md-toc-inner { margin-left: 4em; }
-.md-toc-h4 .md-toc-inner { margin-left: 6em; }
-.md-toc-h5 .md-toc-inner { margin-left: 8em; }
-.md-toc-h6 .md-toc-inner { margin-left: 10em; }
-@media screen and (max-width: 48em) { 
-  .md-toc-h3 .md-toc-inner { margin-left: 3.5em; }
-  .md-toc-h4 .md-toc-inner { margin-left: 5em; }
-  .md-toc-h5 .md-toc-inner { margin-left: 6.5em; }
-  .md-toc-h6 .md-toc-inner { margin-left: 8em; }
-}
-a.md-toc-inner { font-size: inherit; font-style: inherit; font-weight: inherit; line-height: inherit; }
-.footnote-line a:not(.reversefootnote) { color: inherit; }
-.md-attr { display: none; }
-.md-fn-count::after { content: "."; }
-code, pre, samp, tt { font-family: var(--monospace); }
-kbd { margin: 0px 0.1em; padding: 0.1em 0.6em; font-size: 0.8em; color: rgb(36, 39, 41); background-color: rgb(255, 255, 255); border: 1px solid rgb(173, 179, 185); border-top-left-radius: 3px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; border-bottom-left-radius: 3px; box-shadow: rgba(12, 13, 14, 0.2) 0px 1px 0px, rgb(255, 255, 255) 0px 0px 0px 2px inset; white-space: nowrap; vertical-align: middle; }
-.md-comment { color: rgb(162, 127, 3); opacity: 0.6; font-family: var(--monospace); }
-code { text-align: left; }
-a.md-print-anchor { white-space: pre !important; border: none !important; display: inline-block !important; position: absolute !important; width: 1px !important; right: 0px !important; outline: 0px !important; text-shadow: initial !important; background-position: 0px 0px !important; }
-.os-windows.monocolor-emoji .md-emoji { font-family: "Segoe UI Symbol", sans-serif; }
-.md-diagram-panel > svg { max-width: 100%; }
-[lang="flow"] svg, [lang="mermaid"] svg { max-width: 100%; height: auto; }
-[lang="mermaid"] .node text { font-size: 1rem; }
-table tr th { border-bottom-width: 0px; }
-video { max-width: 100%; display: block; margin: 0px auto; }
-iframe { max-width: 100%; width: 100%; border: none; }
-.highlight td, .highlight tr { border: 0px; }
-mark { background-color: rgb(255, 255, 0); color: rgb(0, 0, 0); }
-.md-html-inline .md-plain, .md-html-inline strong, mark .md-inline-math, mark strong { color: inherit; }
-.md-expand mark .md-meta { opacity: 0.3 !important; }
-mark .md-meta { color: rgb(0, 0, 0); }
-@media print { 
-  .typora-export h1, .typora-export h2, .typora-export h3, .typora-export h4, .typora-export h5, .typora-export h6 { break-inside: avoid; }
-}
-.md-diagram-panel .messageText { stroke: none !important; }
-.md-diagram-panel .start-state { fill: var(--node-fill); }
-.md-diagram-panel .edgeLabel rect { opacity: 1 !important; }
-.md-fences.md-fences-math { font-size: 1em; }
-.md-fences-advanced:not(.md-focus) { padding: 0px; white-space: nowrap; border: 0px; }
-.md-fences-advanced:not(.md-focus) { background-image: inherit; background-size: inherit; background-attachment: inherit; background-origin: inherit; background-clip: inherit; background-color: inherit; background-position: inherit; background-repeat: inherit; }
-.typora-export-show-outline .typora-export-content { max-width: 1440px; margin: auto; display: flex; flex-direction: row; }
-.typora-export-sidebar { width: 300px; font-size: 0.8rem; margin-top: 80px; margin-right: 18px; }
-.typora-export-show-outline #write { --webkit-flex: 2; flex: 2 1 0%; }
-.typora-export-sidebar .outline-content { position: fixed; top: 0px; max-height: 100%; overflow: hidden auto; padding-bottom: 30px; padding-top: 60px; width: 300px; }
-@media screen and (max-width: 1024px) { 
-  .typora-export-sidebar, .typora-export-sidebar .outline-content { width: 240px; }
-}
-@media screen and (max-width: 800px) { 
-  .typora-export-sidebar { display: none; }
-}
-.outline-content li, .outline-content ul { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; list-style: none; }
-.outline-content ul { margin-top: 0px; margin-bottom: 0px; }
-.outline-content strong { font-weight: 400; }
-.outline-expander { width: 1rem; height: 1.428571429rem; position: relative; display: table-cell; vertical-align: middle; cursor: pointer; padding-left: 4px; }
-.outline-expander::before { content: ""; position: relative; font-family: Ionicons; display: inline-block; font-size: 8px; vertical-align: middle; }
-.outline-item { padding-top: 3px; padding-bottom: 3px; cursor: pointer; }
-.outline-expander:hover::before { content: ""; }
-.outline-h1 > .outline-item { padding-left: 0px; }
-.outline-h2 > .outline-item { padding-left: 1em; }
-.outline-h3 > .outline-item { padding-left: 2em; }
-.outline-h4 > .outline-item { padding-left: 3em; }
-.outline-h5 > .outline-item { padding-left: 4em; }
-.outline-h6 > .outline-item { padding-left: 5em; }
-.outline-label { cursor: pointer; display: table-cell; vertical-align: middle; text-decoration: none; color: inherit; }
-.outline-label:hover { text-decoration: underline; }
-.outline-item:hover { border-color: rgb(245, 245, 245); background-color: var(--item-hover-bg-color); }
-.outline-item:hover { margin-left: -28px; margin-right: -28px; border-left-width: 28px; border-left-style: solid; border-left-color: transparent; border-right-width: 28px; border-right-style: solid; border-right-color: transparent; }
-.outline-item-single .outline-expander::before, .outline-item-single .outline-expander:hover::before { display: none; }
-.outline-item-open > .outline-item > .outline-expander::before { content: ""; }
-.outline-children { display: none; }
-.info-panel-tab-wrapper { display: none; }
-.outline-item-open > .outline-children { display: block; }
-.typora-export .outline-item { padding-top: 1px; padding-bottom: 1px; }
-.typora-export .outline-item:hover { margin-right: -8px; border-right-width: 8px; border-right-style: solid; border-right-color: transparent; }
-.typora-export .outline-expander::before { content: "+"; font-family: inherit; top: -1px; }
-.typora-export .outline-expander:hover::before, .typora-export .outline-item-open > .outline-item > .outline-expander::before { content: "−"; }
-.typora-export-collapse-outline .outline-children { display: none; }
-.typora-export-collapse-outline .outline-item-open > .outline-children, .typora-export-no-collapse-outline .outline-children { display: block; }
-.typora-export-no-collapse-outline .outline-expander::before { content: "" !important; }
-.typora-export-show-outline .outline-item-active > .outline-item .outline-label { font-weight: 700; }
-.md-inline-math-container mjx-container { zoom: 0.95; }
-
-
-@include-when-export url(https://fonts.loli.net/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext);
-@include-when-export url(https://fonts.loli.net/css?family=Lato:900,300&subset=latin-ext);
-
-:root {
-	--control-text-color: #777;
-}
-
-/**
- * forked from pixyll.com
- * MIT license
+<!DOCTYPE html><html><head>
+      <title>Manual</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\Andy\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.6.3\node_modules\@shd101wyy\mume\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <style>
+      /**
+ * prism.js Github theme based on GitHub's theme.
+ * @author Sam Clarke
  */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: #333;
+  background: none;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.4;
 
-h1,
-.h1,
-.f1 {
-	font-size: 2rem;
-	line-height: 2.5rem;
-}
-h2,
-.h2,
-.f2 {
-	font-size: 1.5rem;
-	line-height: 2rem;
-}
-h3,
-.h3,
-.f3 {
-	font-size: 1.25rem;
-	line-height: 1.5rem;
-}
-p,
-.p,
-.f4,
-h4,
-h5,
-h6,
-dl,
-ol,
-ul,
-pre[cid],
-div[cid],
-#typora-source {
-	font-size: 1.125rem;
-	line-height: 1.5rem;
+  -moz-tab-size: 8;
+  -o-tab-size: 8;
+  tab-size: 8;
+
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
 }
 
-h4 {
-	font-size: 1.13rem;
-}
-/*
- Pixyll
- A simple, beautiful theme for Jekyll that emphasizes content rather than aesthetic fluff.
- Best served with BASSCSS (http://jxnblk.github.io/basscss)
- Crafted with <3 by John Otander (@4lpine) - ©2015 John Otander MIT License http://opensource.org/licenses/MIT
-
-*/
-
-body {
-	font-family: "Merriweather", "PT Serif", Georgia, "Times New Roman", "STSong", 'Segoe UI Emoji', Serif;
-	line-height: 1.5rem;
-	font-weight: 400;
+/* Code blocks */
+pre[class*="language-"] {
+  padding: .8em;
+  overflow: auto;
+  /* border: 1px solid #ddd; */
+  border-radius: 3px;
+  /* background: #fff; */
+  background: #f5f5f5;
 }
 
-#write {
-	max-width: 914px;
-	color: #333;
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+  padding: .1em;
+  border-radius: .3em;
+  white-space: normal;
+  background: #f5f5f5;
 }
 
-@media only screen and (min-width: 1400px) {
-	#write {
-		max-width: 1100px;
-	}
+.token.comment,
+.token.blockquote {
+  color: #969896;
 }
 
-@media only screen and (min-width: 1700px) {
-	#write {
-		max-width: 1200px;
-	}
+.token.cdata {
+  color: #183691;
 }
 
-img {
-	width: auto;
-	max-width: 100%;
-}
-body {
-	font-size: 1.5rem;
-	box-sizing: border-box;
-	-moz-box-sizing: border-box;
-	-webkit-box-sizing: border-box;
+.token.doctype,
+.token.punctuation,
+.token.variable,
+.token.macro.property {
+  color: #333;
 }
 
-.ty-table-edit {
-	background: #ededed;
+.token.operator,
+.token.important,
+.token.keyword,
+.token.rule,
+.token.builtin {
+  color: #a71d5d;
 }
 
-table {
-	width: 100%;
-	font-size: 1.125rem;
-}
-table > thead > tr > th,
-table > thead > tr > td,
-table > tbody > tr > th,
-table > tbody > tr > td,
-table > tfoot > tr > th,
-table > tfoot > tr > td {
-	padding: 12px;
-	line-height: 1.2;
-	vertical-align: top;
-	border-top: 1px solid #333;
-}
-table > thead > tr > th {
-	vertical-align: bottom;
-	border-bottom: 2px solid #333;
-}
-table > caption + thead > tr:first-child > th,
-table > caption + thead > tr:first-child > td,
-table > colgroup + thead > tr:first-child > th,
-table > colgroup + thead > tr:first-child > td,
-table > thead:first-child > tr:first-child > th,
-table > thead:first-child > tr:first-child > td {
-	border-top: 0;
-}
-table > tbody + tbody {
-	border-top: 2px solid #333;
-}
-p {
-	font-weight: 300;
-	line-height: 1.5;
-}
-abbr {
-	border-bottom: 1px black dotted;
-	cursor: help;
-}
-pre,
-code {
-	font-family: Menlo, Monaco, "Courier New", monospace;
+.token.string,
+.token.url,
+.token.regex,
+.token.attr-value {
+  color: #183691;
 }
 
-code,
-.md-fences  {
-	color: #7a7a7a;
+.token.property,
+.token.number,
+.token.boolean,
+.token.entity,
+.token.atrule,
+.token.constant,
+.token.symbol,
+.token.command,
+.token.code {
+  color: #0086b3;
 }
 
-.md-fences {
-	padding: 1.125em;
-	margin-bottom: 0.88em;
-	font-size: 1rem;
-	border: 1px solid #7a7a7a;
-	padding-bottom: 0.5rem;
-	padding-top: 0.5rem;
+.token.tag,
+.token.selector,
+.token.prolog {
+  color: #63a35c;
 }
 
-blockquote {
-	padding: 1.33em;
-	font-style: italic;
-	border-left: 5px solid #7a7a7a;
-	color: #555;
-}
-blockquote em {
-	color: #000;
-}
-blockquote footer {
-	font-size: .85rem;
-	font-style: normal;
-	background-color: #fff;
-	color: #7a7a7a;
-	border-color: transparent;
-}
-h1,
-.h1,
-h2,
-.h2,
-h3,
-.h3,
-h4,
-.h4,
-h5,
-.h5,
-h6,
-.h6 {
-	font-family: "Lato", 'Helvetica Neue', Helvetica, sans-serif;
-	font-weight: bold;
-	line-height: 1.2;
-	margin: 1em 0 0.5em;
-}
-@media screen and (min-width: 48em) {
-	.h1,
-	h1 {
-		font-size: 3.250rem;
-	}
-	.h2,
-	h2 {
-		font-size: 2.298rem;
-	}
-	.h3,
-	h3 {
-		font-size: 1.625rem;
-	}
-	.h4,
-	h4 {
-		font-size: 1.3rem;
-	}
-	#write>h4.md-focus:before,
-	#write>h5.md-focus:before,
-	#write>h6.md-focus:before{
-		top: 1px;
-	}
-	.p,
-	p,
-	li {
-		font-size: 1.25rem;
-		line-height: 1.8;
-	}
-	table {
-		font-size: 1.25rem;
-	}
-}
-@media (max-width: 48em) {
-	blockquote {
-		margin-left: 1rem;
-		margin-right: 0;
-		padding: 0.5em;
-	}
-	.h1,
-	h1 {
-		font-size: 2.827rem;
-	}
-	.h2,
-	h2 {
-		font-size: 1.999rem;
-	}
-	.h3,
-	h3 {
-		font-size: 1.413rem;
-	}
-	.h4,
-	h4 {
-		font-size: 1.3rem;
-	}
-}
-@media screen and (min-width: 64em) {
-	.h1,
-	h1 {
-		font-size: 4.498rem;
-	}
-	.h2,
-	h2 {
-		font-size: 2.29rem;
-	}
-	.h3,
-	h3 {
-		font-size: 1.9rem;
-	}
-	.h4,
-	h4 {
-		font-size: 1.591rem;
-	}
-	#write>h4.md-focus:before{
-		top:4px;
-	}
-}
-a {
-	color: #463F5C;
-	text-decoration: underline;
+.token.function,
+.token.namespace,
+.token.pseudo-element,
+.token.class,
+.token.class-name,
+.token.pseudo-class,
+.token.id,
+.token.url-reference .token.variable,
+.token.attr-name {
+  color: #795da3;
 }
 
-#write {
-	padding-top: 2rem;
+.token.entity {
+  cursor: help;
 }
 
-#write pre.md-meta-block {
-	min-height: 35px;
-	padding: 0.5em 1em;
-	white-space: pre;
-	border: 0px;
-
-	border-left: 30px #f8f8f8 solid;
-	border-right: 30px #f8f8f8 solid;
-	width: 100vw;
-	max-width: calc(100% + 60px);
-
-	margin-left: -30px;
-	margin-bottom: 2em;
-	margin-top: -2010px;
-	padding-top: 2000px;
-	padding-bottom: 10px;
-	line-height: 1.5em;
-	color: #7a7a7a;
-	background-color: #fafafa;
-	font-family: 'Lato', 'Helvetica Neue', Helvetica, sans-serif;
-	font-weight: 300;
-	clear: both;
-	padding-left: 0;
-	font-size:1.125rem;
-}
-.md-image>.md-meta {
-	color: #463F5C
-}
-.footnotes {
-	font-size:1.1rem;
-}
-.md-tag {
-	font-family: 'Lato', 'Helvetica Neue', Helvetica, sans-serif;
-}
-.code-tooltip {
-	background: white;
-}
-.code-tooltip-content {
-	font-size: 1.1rem;
+.token.title,
+.token.title .token.punctuation {
+  font-weight: bold;
+  color: #1d3e81;
 }
 
-.task-list{
-	padding-left: 0;
+.token.list {
+  color: #ed6a43;
 }
 
-.md-task-list-item {
-	padding-left:34px;
+.token.inserted {
+  background-color: #eaffea;
+  color: #55a532;
 }
 
-.md-task-list-item > input{
-	width: 1.25rem;
-	height: 1.25rem;
-	display: block;
-	-webkit-appearance: initial;
-	top: -0.2rem;
-	margin-left: -1.6em;
-	margin-top: calc(1rem - 7px);
-	border: none;
+.token.deleted {
+  background-color: #ffecec;
+  color: #bd2c00;
 }
 
-.md-task-list-item > input:focus{
-	outline: none;
-	box-shadow: none;
+.token.bold {
+  font-weight: bold;
 }
 
-.md-task-list-item > input:before{
-	border: 1px solid #555;
-	border-radius: 1.5rem;
-	width: 1.5rem;
-	height: 1.5rem;
-	background: #fff;
-	content: ' ';
-	transition: background-color 200ms ease-in-out;
-	display: block;
+.token.italic {
+  font-style: italic;
 }
 
-.md-task-list-item > input:checked:before,
-.md-task-list-item > input[checked]:before{
-	background: #333;
-	border-width: 2px;
-	display:inline-block;
-	transition: background-color 200ms ease-in-out;
+
+/* JSON */
+.language-json .token.property {
+  color: #183691;
 }
 
-.md-task-list-item > input:checked:after,
-.md-task-list-item > input[checked]:after {
-	opacity: 1;
+.language-markup .token.tag .token.punctuation {
+  color: #333;
 }
 
-.md-task-list-item > input:after {
-	opacity: 1;
-	-webkit-transition: opacity 0.05s ease-in-out;
-	-moz-transition: opacity 0.05s ease-in-out;
-	transition: opacity 0.05s ease-in-out;
-	-webkit-transform: rotate(-45deg);
-	-moz-transform: rotate(-45deg);
-	transform: rotate(-45deg);
-	position: absolute;
-	top: 0.4375rem;
-	left: 0.28125rem;
-	width: 0.9375rem;
-	height: 0.5rem;
-	border: 3px solid #fff;
-	border-top: 0;
-	border-right: 0;
-	content: ' ';
-	opacity: 0;
+/* CSS */
+code.language-css,
+.language-css .token.function {
+  color: #0086b3;
 }
 
-.md-tag {
-	color:inherit;
+/* YAML */
+.language-yaml .token.atrule {
+  color: #63a35c;
 }
 
-.md-toc:focus .md-toc-content{
-	margin-top: 19px;
+code.language-yaml {
+  color: #183691;
 }
 
-#typora-sidebar {
-	font-size:1rem !important;
+/* Ruby */
+.language-ruby .token.function {
+  color: #333;
 }
 
-.html-for-mac #typora-sidebar {
-	background-color:white;
+/* Markdown */
+.language-markdown .token.url {
+  color: #795da3;
 }
 
-.outline-content li, .outline-content ul {
-	font-size:1rem !important;
+/* Makefile */
+.language-makefile .token.symbol {
+  color: #795da3;
 }
 
-.outline-title {
-	line-height: inherit;
-	margin-top: 10px;
+.language-makefile .token.variable {
+  color: #183691;
 }
 
-.outline-expander {
-	width: 18px;
+.language-makefile .token.builtin {
+  color: #0086b3;
 }
 
-.outline-expander:before {
- 	content: "+";
-	font-family: inherit;
-	color: rgb(108, 108, 108); 
-  font-size: 1.5rem;
- 	top: -0.1rem;
+/* Bash */
+.language-bash .token.keyword {
+  color: #0086b3;
 }
 
-.outline-expander:hover:before {
-	content: "+";
+/* highlight */
+pre[data-line] {
+  position: relative;
+  padding: 1em 0 1em 3em;
+}
+pre[data-line] .line-highlight-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+  display: block;
+  width: 100%;
 }
 
-.outline-item-open>.outline-item>.outline-expander:before{
-	content: "-";
+pre[data-line] .line-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: inherit 0;
+  margin-top: 1em;
+  background: hsla(24, 20%, 50%,.08);
+  background: linear-gradient(to right, hsla(24, 20%, 50%,.1) 70%, hsla(24, 20%, 50%,0));
+  pointer-events: none;
+  line-height: inherit;
+  white-space: pre;
 }
 
-/** source code mode */
-#typora-source {
-	font-family: Courier, monospace;
-    color: #6A6A6A;
+pre[data-line] .line-highlight:before, 
+pre[data-line] .line-highlight[data-end]:after {
+  content: attr(data-start);
+  position: absolute;
+  top: .4em;
+  left: .6em;
+  min-width: 1em;
+  padding: 0 .5em;
+  background-color: hsla(24, 20%, 50%,.4);
+  color: hsl(24, 20%, 95%);
+  font: bold 65%/1.5 sans-serif;
+  text-align: center;
+  vertical-align: .3em;
+  border-radius: 999px;
+  text-shadow: none;
+  box-shadow: 0 1px white;
 }
 
-.os-windows #typora-source {
-	font-family: inherit;
-}
+pre[data-line] .line-highlight[data-end]:after {
+  content: attr(data-end);
+  top: auto;
+  bottom: .4em;
+}html body{font-family:"Helvetica Neue",Helvetica,"Segoe UI",Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ul,html body>ol{margin-bottom:16px}html body ul,html body ol{padding-left:2em}html body ul.no-list,html body ol.no-list{padding:0;list-style-type:none}html body ul ul,html body ul ol,html body ol ol,html body ol ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:bold;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:bold}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em !important;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::before,html body code::after{letter-spacing:-0.2em;content:"\00a0"}html body pre>code{padding:0;margin:0;font-size:.85em !important;word-break:normal;white-space:pre;background:transparent;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;font-size:.85em !important;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:before,html body pre tt:before,html body pre code:after,html body pre tt:after{content:normal}html body p,html body blockquote,html body ul,html body ol,html body dl,html body pre{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body pre,html body code{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview .pagebreak,.markdown-preview .newpage{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center !important}.markdown-preview:not([for="preview"]) .code-chunk .btn-group{display:none}.markdown-preview:not([for="preview"]) .code-chunk .status{display:none}.markdown-preview:not([for="preview"]) .code-chunk .output-div{margin-bottom:16px}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0}@media screen and (min-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{font-size:14px !important;padding:1em}}@media print{html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,0.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc ul{padding:0 1.6em;margin-top:.8em}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc li{margin-bottom:.8em}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc ul{list-style-type:none}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% -  300px);padding:2em calc(50% - 457px -  150px);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
 
-.cm-s-typora-default .cm-header, 
-.cm-s-typora-default .cm-property,
-.CodeMirror.cm-s-typora-default div.CodeMirror-cursor {
-	color: #428bca;
-}
-
-.cm-s-typora-default .cm-atom, .cm-s-typora-default .cm-number {
-	color: #777777;
-}
-
-.md-diagram-panel {
-	margin-top: 24px;
-	margin-left: -1.2em;
-}
-
-.md-mathjax-midline {
-	background: #fafafa;
-}
-
-.enable-diagrams pre.md-fences[lang="sequence"] .code-tooltip,
-.enable-diagrams pre.md-fences[lang="flow"] .code-tooltip,
-.enable-diagrams pre.md-fences[lang="mermaid"] .code-tooltip {
-    bottom: -3.4em;
-}
-
-.dropdown-menu .divider {
-	border-color: #e5e5e5;
-}
-
- @media print { @page {margin: 0 0 0 0;} body.typora-export {padding-left: 0; padding-right: 0;} #write {padding:0;}}
-</style><title>Manual.html</title>
-</head>
-<body class='typora-export'><div class='typora-export-content'>
-<div id='write'  class=''><h1 align="center">Manual for PanGraphViewer</h1><br><h3 align="center">Yuxuan Yuan, Ricky Ma and Ting-Fung Chan*</h3>
+      </style>
+    </head>
+    <body for="html-export">
+      <div class="mume markdown-preview  ">
+      <h1 align="center">Manual for PanGraphViewer</h1>
+<br><br>
+<h3 align="center">Yuxuan Yuan, Ricky Ma and Ting-Fung Chan*</h3>
 <h5 align="center">The Chinese University of Hong Kong, Hong Kong</h5>
 <p align="center">
-  <img width="900" height="800" src="src/cover.jpg" alt="panGraphViewer logo">
-</p><p>&nbsp;</p><h6 align="center">Version 1.0.1</h6><h6 align="center"> 2021-12-10</h6><div style="page-break-after: always;"></div><h1 id='table-of-contents'><span>Table of Contents</span></h1><ul><li><p><a href='#workflow-for-using-pangraphviewer'><span>Workflow for using panGraphViewer</span></a></p><ul><li><a href='#plot-a-genome-graph'><span>Plot a genome graph</span></a></li><li><a href='#check-the-sequence-of-nodes-of-interest'><span>Check the sequence of nodes of interest</span></a></li><li><a href='#show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples'><span>Show gene models that may be interrupted by some sequences/nodes in some samples</span></a></li></ul></li><li><p><a href='#how-to-use-desktop-based-pangraphviewer'><span>How to use desktop-based panGraphViewer</span></a></p><ul><li><p><a href='#load-files-for-graph-visualization'><span>Load Files for Graph Visualization</span></a></p><ul><li><a href='#gfa'><span>GFA</span></a></li><li><a href='#vcf'><span>VCF</span></a></li></ul></li><li><p><a href='#selection-for-plot'><span>Selection for Plot</span></a></p></li><li><p><a href='#genome-graph'><span>Genome Graph</span></a></p></li><li><p><a href='#check-node-information'><span>Check node information</span></a></p></li><li><p><a href='#display-gene-models-that-may-be-interrupted-in-some-samples'><span>Display gene models that may be interrupted in some samples</span></a></p></li></ul></li><li><p><a href='#how-to-use-web-browser-based-pangraphviewer'><span>How to use web browser-based panGraphViewer</span></a></p></li></ul><div style="page-break-after: always;"></div><h2 id='workflow-for-using-pangraphviewer'><span>Workflow for using panGraphViewer</span></h2><p><span>Thank you for choosing panGraphViewer. Hope you can find our tool is useful for your study. In this section, we will introduce a general </span><code>workflow</code><span> (see the figure below) that can be used to explore </span><code>panGraphViewer</code><span>.</span></p><p align="center">
-  <img width="800" height="700" src="src/workflow.jpg" alt="workflow">
-</p><p>&nbsp;</p><p><span>There are three key functions that we would like to emphasize.</span></p><ul><li><span>Plot a genome graph </span></li><li><span>Check the sequence of nodes of interest</span></li><li><span>Show gene models that may be interrupted by some sequences/nodes in some samples</span></li></ul><div style="page-break-after: always;"></div><h3 id='plot-a-genome-graph'><span>Plot a genome graph</span></h3><p><span>Depending on the purpose and preference, users can install either application on their platform.</span></p><ul><li><span>Before starting the application, firstly, users need to prepare an </span><code>rGFA</code><span> file, a </span><code>GFA</code><span> file or a </span><code>VCF</code><span> file that can be directly imported into the application. An output directory is also needed when processing the analyses. </span></li><li><span>After specifying a needed file and an output directory, users can start to parse the file and then the graph information underlying would be stored in the memory. Users can adjust their purpose to decide which chromosome/sequence or a segment of it can be displayed in the display canvas by specifying the </span><code>backbone</code><span>, </span><code>chromosome/sequence</code><span> name and </span><code>coordinates</code><span>. </span></li><li><span>Once the graph is displayed, users can use, for example, the </span><code>mouse</code><span> to zoom in and out to explore the graph. Hover information will show in the canvas if users move the </span><code>mouse</code><span> to the node.</span></li></ul><h3 id='check-the-sequence-of-nodes-of-interest'><span>Check the sequence of nodes of interest</span></h3><p><span>If users find some nodes are of interest, they can check or save the sequence of the nodes.</span></p><ul><li><span>Usually, users can check nodes that are in variant hotspot regions or nodes falling in the gene model regions which may interrupt the genes and change the functions in some samples.</span></li><li><span>The saved node sequences can also be imported to other tools such as </span><code>NCBI BLAST</code><span> to check the functions.</span></li></ul><h3 id='show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples'><span>Show gene models that may be interrupted by some sequences/nodes in some samples</span></h3><p><span>If users have the annotation file for the </span><code>backbone</code><span> sample, they can check gene models that are interrupted by some sequences/nodes in some samples. </span></p><ul><li><span>This would be of particular interest to biologists to find out if some important gene models are interrupted by some insertions, deletions, duplications or inversions in some samples.</span></li></ul><div style="page-break-after: always;"></div><h2 id='how-to-use-desktop-based-pangraphviewer'><span>How to use desktop-based panGraphViewer</span></h2><p><span>For the </span><code>desktop-based</code><span> application, once it is opened as shown below, users can follow the following steps to explore the program.</span></p><p align="center">
-  <img width="800" src="src/application.jpg" alt="application">
-</p><p>&nbsp;</p><h3 id='load-files-for-graph-visualization'><span>Load Files for Graph Visualization</span></h3><p><span>Here we provide two options to let users select if they want to explore a </span><code>GFA</code><span>-based graph or a </span><code>VCF</code><span>-based graph.</span></p><h4 id='gfa'><span>GFA</span></h4><p><span>When selecting to plot a </span><code>GFA</code><span>-based graph, an </span><code>rGFA</code><span> file or a </span><code>GFA</code><span> file is needed. Users can click the </span><code>Select</code><span> button to specify the file and then select an output directory to perform the analyses.</span></p><p align="center">
-  <img width="320" height="220" src="src/load_gfa_d.jpg" alt="load_gfa_d">
-</p><h4 id='vcf'><span>VCF</span></h4><p><span>When selecting to plot a </span><code>VCF</code><span>-based graph, a </span><code>VCF</code><span> file is needed. </span></p><p align="center">
-  <img width="320" height="220" src="src/load_vcf_d.jpg" alt="load_vcf_d">
-</p><br><p><span>Users can click the </span><code>Select</code><span> button to specify the VCF file. An output directory is also needed to perform the analyses. Here the </span><code>Backbone name</code><span> and </span><code>Backbone fasta</code><span> are optional if </span></p><ul><li><span>the VCF file is a standard one with sequence/contig header and length clearly documented and users do not have a </span><code>backbone fasta</code><span> </span></li><li><span>users have a standard VCF file but have no interest in node sequences </span></li></ul><p><span>The program will check automatically if the given </span><code>VCF</code><span> file is a standard one once a </span><code>fasta</code><span> file is not specified. If the </span><code>VCF</code><span> file selected is not qualified, an error message will pop up.</span></p><p align="center">
-  <img width="260" height="160" src="src/vcf_err_d.jpg" alt="vcf_err_d">
-</p><p><span>Otherwise, a warning message will show.</span></p><p align="center">
-  <img width="260" height="160" src="src/fasta_missing_d.jpg" alt="fasta_missing_d">
-</p><p><span>By default the </span><code>Backbone name</code><span> is </span><strong><span>backbone</span></strong><span> and the </span><code>Threads</code><span> to parse the VCF file is </span><code>4</code><span>.   </span></p><p><span>Once the files are selected and the output directory is specified, users can click the </span><code>Start</code><span> button to parse either the given </span><code>GFA</code><span> file or the </span><code>VCF</code><span> file. The program will run internally with &#39;</span><span style="color:blue"><span>Parsing... or Converting ...</span></span><span>&#39;  showing in the </span><code>Status</code><span> bar. Once this is completed, &#39;</span><span style="color:green"><span>Finished in xxx s!</span></span><span>&#39; will show. </span></p><h3 id='selection-for-plot'><span>Selection for Plot</span></h3><p><span>After completing </span><code>GFA</code><span> or </span><code>VCF</code><span> parsing, users can go to the </span><code>Selection for Plot</code><span> panel to check genome graphs. Here we provide </span><code>Basic settings</code><span> and </span><code>Sample(s) showing</code><span> panels let users to customize their plots. </span></p><p><span>In the </span><code>Basic settings</code><span> panel, users can select a particular </span><code>chromosome/sequence</code><span> to display after specifying the name of the </span><code>backbone</code><span> sample.</span></p><p align="center">
-  <img width="300" height="200" src="src/selection_basic_d.jpg" alt="selection_basic_d">
-</p><p><span>For the </span><code>start</code><span> and </span><code>end</code><span> positions, users can specify both of them, one of them or none. For example, </span></p><ul><li><span>if users specify both </span><code>start</code><span> and </span><code>end</code><span> positions, the graph will be limited to the two positions within the selected chromosome/sequence. </span></li><li><span>if only </span><code>start</code><span> position is given, the program will display a graph between the </span><code>start</code><span> position and the end position of the selected chromosome/sequence. </span></li><li><span>if only </span><code>end</code><span> position is given, the program will display a graph between 1 to the given </span><code>end</code><span> position within the selected chromosome/sequence. </span></li><li><span>if both start and end positions are not given, the program will display the entire graph of the selected chromosome/sequence.</span></li></ul><p><span>Additionally, the program will check if the given </span><code>start</code><span> and </span><code>end</code><span> positions are qualified automatically. If not, a warning message will pop up and the plot will not be generated.</span></p><div style="page-break-after: always;"></div><p><span>For the </span><code>Sample(s) showing</code><span> panel, users can select to hide nodes from particular sample(s) if they have such a demand.</span></p><p align="center">
-  <img width="300" height="200" src="src/sample_s_d.jpg" alt="sample_s_d">
-</p><h3 id='genome-graph'><span>Genome Graph</span></h3><p><span>After completing the settings above, users can either click the </span><code>Plot</code><span> button in the </span><code>Plot the Graph</code><span> panel to generate the graph or customise the </span><code>Settings</code><span> first and then plot graphs. </span></p><p><span>In </span><code>Settings</code><span>, users can select </span><code>Node Shapes</code><span> to specify node shapes in either </span><code>vis.js</code><span>-based plot or </span><code>cytoscape.js</code><span>-based plot from the dropdown menus.</span></p><p align="center">
-  <img width="700" height="600" src="src/node_shape_d.jpg" alt="node_shape_d">
-</p><p><span>Users can also select to use either </span><code>vis.js</code><span> or </span><code>cytoscape.js</code><span> to plot graphs by the number of nodes specified in the </span><code>Graph Modification</code><span> panel under </span><code>Settings</code><span>. </span></p><p align="center">
-  <img width="450" height="350" src="src/graph_m_d.jpg" alt="graph_m_d">
-</p><p><span>By default, if users want to check graphs with &lt;=200 nodes, </span><code>vis.js</code><span> will be applied to generate graphs. Users can adjust this value (</span><code>200</code><span>) depending on their preference. However, if there are over </span><code>five thousands</code><span> of nodes that users want to browse in one graph, we </span><strong><span>don&#39;t recommend</span></strong><span> using </span><code>vis.js</code><span> as it may take a long time to load the graph file (an html file).</span></p><p><span>Depending on the screen/display size, users may also need to adjust the canvas </span><code>height and width</code><span> to make the graph fully show in the canvas if selecting </span><code>vis.js</code><span>-based plot. The hover box may run off the screen if the canvas </span><code>height and width</code><span> settings do not match with users&#39; screen size. </span></p><p><span>Once all settings are ready, users can click the </span><code>Plot</code><span> button to generate the graphs. After the graph is showing in the display canvas, users can use the </span><code>mouse</code><span> to zoom in and out to check graph details. Users can also move the </span><code>mouse</code><span> close to a specific node to check the node information (</span><strong><span>mouseover</span></strong><span>, see the figure below).</span></p><p align="center">
-<img width="640" height="540" src="src/hover.jpg" alt="hover">
-</p><p>&nbsp;</p><p><span>From the hover box, users can capture the information, such as</span></p><ul><li><strong><span>NodeID</span></strong><span>: the node identity </span></li><li><strong><span>Resource</span></strong><span>: the node belongs to which chromosome/sequence in which sample</span></li><li><strong><span>Len</span></strong><span>: the sequence length of the node</span></li><li><strong><span>Pos</span></strong><span>: the coordinate of the backbone node</span></li><li><strong><span>Info</span></strong><span>: if the graph is from a VCF file, it will show the type of variants and the occur position in the backbone sample. </span><code>SNP</code><span> represents single nucleotide polymorphism, </span><code>INS</code><span> represents insertion, </span><code>INV</code><span> represents inversion,  </span><code>DUP</code><span> represents duplication and </span><code>TRANS</code><span> represents translocation.</span></li><li><strong><span>Seq</span></strong><span>: the first 10 nucleotides of the node sequence if it has</span></li></ul><p><span>If users decide to use </span><code>vis.js</code><span> to plot graphs, we also provide some options in </span><code>Settings</code><span> to let users customize the plot if they don&#39;t like the default one.</span></p><ul><li><strong><span>Graph Interaction</span></strong><span>: to enable/disable some functions when interacting with the graph</span></li></ul><p align="center">
-  <img width="460" height="360" src="src/interaction.jpg" alt="interaction">
-</p>  <p>&nbsp;</p><ul><li><strong><span>Graph Modification</span></strong><span>: to customise the display of the graph, for instance the </span><code>graph layout</code><span>, </span><code>edge length</code><span> and the </span><code>degree of node overlapping</code><span>.  </span></li></ul><p align="center">
-  <img width="460" height="360" src="src/GM.jpg" alt="GM">
-</p><p>&nbsp;</p><p><span>Users can customise the graph by enabling the options and the corresponding options would be shown in the display canvas during </span><code>graph display</code><span>. </span></p><p><span>While in </span><code>cytoscape.js</code><span>-based plot, we do not provide such functions or interactions mentioned in the </span><code>vis.js</code><span>-based plot. However, one unique interaction in </span><code>cytoscape</code><span>-based plot is that users can press </span><code>Ctrl</code><span> or </span><code>command</code><span> and hold the </span><code>left click</code><span> button of the </span><code>mouse</code><span> to select particular node regions and then </span><code>right</code><span> click the </span><code>mouse</code><span> to show or hide nodes (see the figure below). This would be useful if users want to check a specific subgraph.</span></p><p align="center">
-<img width="640" height="540" src="src/mSelection.jpg" alt="mSelection">
-</p><p>&nbsp;</p><div style="page-break-after: always;"></div><h3 id='check-node-information'><span>Check node information</span></h3><p><span>We provide two ways to check the node information. </span></p><ul><li><p><span>One way is that users can move the </span><code>mouse</code><span> to a specific node in the display canvas and then a hover box will show the information of the node. </span></p><p align="center">
-<img width="640" height="540" src="src/hover.jpg" alt="hover">
-</p></li><li><p><span>Another way is that users can check the information of nodes from the </span><code>Available Nodes</code><span> panel. </span></p><p align="center">
-  <img width="300" height="200" src="src/aNodes.jpg" alt="aNodes">
-</p><ul><li><span>In the dropdown menu, all nodes in the entire graph will be listed. Users can select the node that they want to check or remove it from the selected list.</span></li><li><span>Users can also type the node id in the </span><code>List of the selected node(s)</code><span> panel by lines</span></li><li><span>Once clicking the </span><code>Check</code><span> button, the program will show the selected nodes in </span><code>fasta</code><span> format with a header similar to the one shown in the </span><code>hover</code><span> box. However, the sequence would be the completed sequence of the node. </span></li><li><span>Users can also click the </span><code>Save the Sequences</code><span> button to save the </span><code>fasta</code><span> file to the output directory. Users can import the saved sequence file to other programs, such as </span><code>NCBI-blast</code><span> for downstream analyses.</span></li></ul><p><span>Please </span><strong><span>note</span></strong><span> that by default we only allow a sequence display with &lt;= </span><code>1000000</code><span> bp in length. The reason to do this is that if a large sequence is needed to display, it would take a long time to show. Users can change the setting in </span><code>Settings</code><span>--&gt; </span><code>Graph Modification</code><span> if they really want to display a large sequence. </span></p></li></ul><h3 id='display-gene-models-that-may-be-interrupted-in-some-samples'><span>Display gene models that may be interrupted in some samples </span></h3><p><span>If users have an annotation file for the </span><code>backbone</code><span> sample, they can check gene models that may be interrupted by some sequences in some samples. </span></p><p align="center">
-  <img width="250" height="150" src="src/gene_d.jpg" alt="gene_d">
-</p><p><span>Basically, users need to </span></p><ul><li><span>specify the annotation file and then parse it. By default, gene models having at least </span><code>2</code><span> nodes falling in the region can be retained. Users can change this setting in </span><code>Settings</code><span> --&gt; </span><code>Graph Modification</code><span>.</span></li><li><span>once the parsing is completed, users can select a gene model from the dropdown menu to check nodes that fall in the selected gene region.</span></li></ul><p><span>After clicking the </span><code>Plot</code><span> button, a plot will show in the display canvas.  </span></p><p align="center">
-  <img width="560" height="460" src="src/gene.jpg" alt="gene">
-</p><p>&nbsp;</p><ul><li><span>Users can enable the zoom in and out function by clicking the </span><code>Wheel Zoom(x-axis)</code><span> button on the right top panel in the canvas. </span></li><li><span>In the canvas, users can get the selected gene model ID and the nodes falling in the gene region. </span></li><li><span>Users can check the nodes through the </span><code>Available Nodes</code><span> panel or plot </span><code>subgraphs</code><span> using the coordinate of the gene model.</span></li></ul><div style="page-break-after: always;"></div><h2 id='how-to-use-web-browser-based-pangraphviewer'><span>How to use web browser-based panGraphViewer</span></h2><p><span>After the installation of the web-based panGraphViewer, users can follow </span><code>README</code><span> to open it. The login interface is like:</span></p><p align="center">
-  <img width="400" height="300" src="src/webLogin.jpg" alt="application-web">
-</p><p>&nbsp;</p><p><span>Users can use the test account (</span><code>demo</code><span>) or personal account to open the application. </span></p><p><span>After opening the page showing above, users can </span></p><ul><li><span>follow similar approaches used in the </span><code>desktop-based</code><span> version, users can </span><code>upload</code><span> and </span><code>parse</code><span> a GFA file, an </span><code>rGFA</code><span> file or a </span><code>VCF</code><span> file to the system</span></li><li><span>plot pangenome graph/subgraph from the </span><code>Plot pangenome</code><span> panel</span></li><li><span>explore the node information from the </span><code>Extract nodes</code><span> panel</span></li><li><span>check gene models that may be interrupted by some sequences in some samples</span></li></ul><p align="center">
-  <img width="900" height="800" src="src/webUI.jpg" alt="webUI">
-</p><p>&nbsp;</p><div style="page-break-after: always;"></div><p><span>Notably, when selecting specific nodes in the graph, the web-based application provides options to directly check/download the node sequence(s). </span></p><p align="center">
-  <img width="660" height="560" src="src/sequence_w.jpg" alt="sequence_w">
-</p><p>&nbsp;</p><div style="page-break-after: always;"></div><p><span>For the </span><code>admin</code><span> account, users can login using the steps shown in the </span><code>README</code><span> file. The interface of the login page is like: </span></p><p align="center">
-  <img width="400" height="300" src="src/admin.jpg" alt="admin">
-</p><p>&nbsp;</p><p><span>Once entering the login page, the admin can create accounts for either groups or users.</span></p><p align="center">
-  <img width="300" height="200" src="src/admin_p.jpg" alt="admin_p">
-</p><p>&nbsp;</p><hr /><p><span>Enjoy using panGraphViewer!</span></p></div></div>
-</body>
-</html>
+  <img width="500" src="src/cover.jpg" alt="PanGraphViewer logo">
+</p>
+<br><br>
+<h4 align="center">Version 1.0.2</h4>
+<h4 align="center"> 2022-09-01</h4>
+<div style="page-break-after: always;"></div>
+<h1 class="mume-header" id="table-of-contents">Table of Contents</h1>
+
+<ul>
+<li><a href="#workflow-for-using-pangraphviewer">Workflow for using PanGraphViewer</a>
+<ul>
+<li><a href="#plot-a-genome-graph">Plot a genome graph</a></li>
+<li><a href="#check-the-sequence-of-nodes-of-interest">Check the sequence of nodes of interest</a></li>
+<li><a href="#show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples">Show gene models that may be interrupted by some sequences/nodes in some samples</a></li>
+</ul>
+</li>
+<li><a href="#how-to-use-desktop-based-pangraphviewer">How to use desktop-based PanGraphViewer</a>
+<ul>
+<li><a href="#load-files-for-graph-visualization">Load Files for Graph Visualization</a>
+<ul>
+<li><a href="#gfa">GFA</a></li>
+<li><a href="#vcf">VCF</a></li>
+</ul>
+</li>
+<li><a href="#selection-for-plot">Selection for Plot</a></li>
+<li><a href="#genome-graph">Genome Graph</a></li>
+<li><a href="#check-node-information">Check node information</a></li>
+<li><a href="#display-gene-models-that-may-be-interrupted-in-some-samples">Display gene models that may be interrupted in some samples</a></li>
+</ul>
+</li>
+<li><a href="#how-to-use-web-browser-based-pangraphviewer">How to use web browser-based PanGraphViewer</a></li>
+</ul>
+<div style="page-break-after: always;"></div>
+<h2 class="mume-header" id="workflow-for-using-pangraphviewer">Workflow for using PanGraphViewer</h2>
+
+<p>Thank you for choosing PanGraphViewer. Hope you can find our tool is useful for your study. In this section, we will introduce a general <code>workflow</code> (see the figure below) that can be used to explore <code>PanGraphViewer</code>.</p>
+<p align="center">
+  <img width="700" src="src/workflow.jpg" alt="workflow">
+</p>
+<p>There are three key functions that we would like to emphasize.</p>
+<ul>
+<li>Plot a genome graph</li>
+<li>Check the sequence of nodes of interest</li>
+<li>Show gene models that may be interrupted by some sequences/nodes in some samples</li>
+</ul>
+<div style="page-break-after: always;"></div>
+<h3 class="mume-header" id="plot-a-genome-graph">Plot a genome graph</h3>
+
+<p>Depending on the purpose and preference, users can install either application on their platform.</p>
+<ul>
+<li>
+<p>Before starting the application, firstly, users need to prepare an <code>rGFA</code> file, a <code>GFA_v1</code> file or a <code>VCF</code> file that can be directly imported into the application. An output directory is also needed when processing the analyses.</p>
+</li>
+<li>
+<p>After specifying a needed file and an output directory, users can start to parse the file and then the graph information underlying would be stored in the memory. Users can adjust their purpose to decide which chromosome/sequence or a segment of it can be displayed in the display canvas by specifying the <code>backbone</code>, <code>chromosome/sequence</code> name, <code>coordinates</code> or &quot;nodeIDs&quot;..</p>
+</li>
+<li>
+<p>Once the graph is displayed, users can use, for example, the <code>mouse</code> to zoom in and out to explore the graph. Hover information will show in the canvas if users move the <code>mouse</code> to the node.</p>
+</li>
+</ul>
+<h3 class="mume-header" id="check-the-sequence-of-nodes-of-interest">Check the sequence of nodes of interest</h3>
+
+<p>If users find some nodes are of interest, they can check or save the sequence of the nodes.</p>
+<ul>
+<li>
+<p>Usually, users can check nodes that are in variant hotspot regions or nodes falling in the gene model regions which may interrupt the genes and change the functions in some samples.</p>
+</li>
+<li>
+<p>The saved node sequences can also be imported to other tools such as <code>NCBI BLAST</code> to check the functions.</p>
+</li>
+</ul>
+<h3 class="mume-header" id="show-gene-models-that-may-be-interrupted-by-some-sequencesnodes-in-some-samples">Show gene models that may be interrupted by some sequences/nodes in some samples</h3>
+
+<p>If users have the annotation file for the <code>backbone</code> sample, they can check gene models that are interrupted by some sequences/nodes in some samples.</p>
+<ul>
+<li>This would be of particular interest to biologists to find out if some important gene models are interrupted by some insertions, deletions, duplications or inversions in some samples.</li>
+</ul>
+<div style="page-break-after: always;"></div>
+<h2 class="mume-header" id="how-to-use-desktop-based-pangraphviewer">How to use desktop-based PanGraphViewer</h2>
+
+<p>For the <code>desktop-based</code> application, once it is opened as shown below, users can follow the following steps to explore the program.</p>
+<p align="center">
+  <img width="700" src="src/application.jpg" alt="application">
+</p>
+<h3 class="mume-header" id="load-files-for-graph-visualization">Load Files for Graph Visualization</h3>
+
+<p>Here we provide two options to let users select if they want to explore a <code>GFA</code>-based graph or a <code>VCF</code>-based graph.</p>
+<h4 class="mume-header" id="gfa">GFA</h4>
+
+<p>When selecting to plot a <code>GFA</code>-based graph, an <code>rGFA</code> file or a <code>GFA_v1</code> file is needed. Users can click the <code>Select</code> button to specify the file and then select an output directory to perform the analyses.</p>
+<p align="center">
+  <img width="320" src="src/load_gfa_d.jpg" alt="load_gfa_d">
+</p>
+<h4 class="mume-header" id="vcf">VCF</h4>
+
+<p>When selecting to plot a <code>VCF</code>-based graph, a <code>VCF</code> file is needed.</p>
+<p align="center">
+  <img width="320" src="src/load_vcf_d.jpg" alt="load_vcf_d">
+</p>
+<p>Users can click the <code>Select</code> button to specify the VCF file. An output directory is also needed to perform the analyses. Here the <code>Backbone name</code> and <code>Backbone fasta</code> are optional if</p>
+<ul>
+<li>the VCF file is a standard one with sequence/contig header and length clearly documented and users do not have a <code>backbone fasta</code></li>
+<li>users have a standard VCF file but have no interest in node sequences</li>
+</ul>
+<p>The program will check automatically if the given <code>VCF</code> file is a standard one once a <code>fasta</code> file is not specified. If the <code>VCF</code> file selected is not qualified, an error message will pop up.</p>
+<p align="center">
+  <img width="320" src="src/vcf_err_d.jpg" alt="vcf_err_d">
+</p>
+<p>Otherwise, a warning message will show.</p>
+<p align="center">
+  <img width="320" src="src/fasta_missing_d.jpg" alt="fasta_missing_d">
+</p>
+<p>By default the <code>Backbone name</code> is <strong>backbone</strong> and the <code>Threads</code> to parse the VCF file is <code>4</code>.</p>
+<p>Once the files are selected and the output directory is specified, users can click the <code>Start</code> button to parse either the given <code>GFA</code> file or the <code>VCF</code> file. The program will run internally with &apos;<span style="color:blue">Parsing... or Converting ...</span>&apos;  showing in the <code>Status</code> bar. Once this is completed, &apos;<span style="color:green">Finished in xxx s!</span>&apos; will show.</p>
+<h3 class="mume-header" id="selection-for-plot">Selection for Plot</h3>
+
+<p>After completing <code>GFA</code> or <code>VCF</code> parsing, users can go to the <code>Selection for Plot</code> panel to check genome graphs. Here we provide <code>Basic settings</code> and <code>Sample(s) showing</code> panels to let users customize their plots.</p>
+<p>In the <code>Basic settings</code> panel, users can select a particular <code>chromosome/sequence</code> to display after specifying the name of the <code>backbone</code> sample.</p>
+<p align="center">
+  <img width="300" src="src/selection_basic_d.jpg" alt="selection_basic_d">
+</p>
+<p>For the <code>start</code> and <code>end</code> positions, users can specify both of them, one of them or none. For example,</p>
+<ul>
+<li>if users specify both <code>start</code> and <code>end</code> positions, the graph will be limited to the two positions within the selected chromosome/sequence.</li>
+<li>if only <code>start</code> position is given, the program will display a graph between the <code>start</code> position and the end position of the selected chromosome/sequence.</li>
+<li>if only <code>end</code> position is given, the program will display a graph between 1 to the given <code>end</code> position within the selected chromosome/sequence.</li>
+<li>if both start and end positions are not given, the program will display the entire graph of the selected chromosome/sequence.</li>
+</ul>
+<p>Additionally, the program will check if the given <code>start</code> and <code>end</code> positions are qualified automatically. If not, a warning message will pop up and the plot will not be generated.</p>
+<p>For the <code>Sample(s) showing</code> panel, users can select to hide nodes from particular sample(s) if they have such a demand.</p>
+<p align="center">
+  <img width="320" src="src/sample_s_d.jpg" alt="sample_s_d">
+</p>
+<h3 class="mume-header" id="genome-graph">Genome Graph</h3>
+
+<p>After completing the settings above, users can either click the <code>Plot</code> button in the <code>Plot the Graph</code> panel to generate the graph or customise the <code>Settings</code> first and then plot graphs.</p>
+<p>In <code>Settings</code>, users can select <code>Node Shapes</code> to specify node shapes in either <code>vis.js</code>-based plot or <code>cytoscape.js</code>-based plot from the dropdown menus.</p>
+<p align="center">
+  <img width="280" src="src/node_shape_d.jpg" alt="node_shape_d">
+</p>
+<p>Users can also select to use either <code>vis.js</code> or <code>cytoscape.js</code> to plot graphs by the number of nodes specified in the <code>Graph Modification</code> panel under <code>Settings</code>.</p>
+<p align="center">
+  <img width="280" src="src/graph_m_d.jpg" alt="graph_m_d">
+</p>
+<p>By default, if users want to check graphs with &lt;=200 nodes, <code>vis.js</code> will be applied to generate graphs. Users can adjust this value (<code>200</code>) depending on their preference. However, if there are over <code>five thousands</code> of nodes that users want to browse in one graph, we <strong>don&apos;t recommend</strong> using <code>vis.js</code> as it may take a long time to load the graph file (an html file).</p>
+<p>Depending on the screen/display size, users may also need to adjust the canvas <code>height and width</code> to make the graph fully show in the canvas if selecting <code>vis.js</code>-based plot. The hover box may run off the screen if the canvas <code>height and width</code> settings do not match with users&apos; screen size.</p>
+<p>Once all settings are ready, users can click the <code>Plot</code> button to generate the graphs. After the graph is shown in the display canvas, users can use the <code>mouse</code> to zoom in and out to check graph details. Users can also move the <code>mouse</code> close to a specific node to check the node information (<strong>mouseover</strong>, see the figure below).</p>
+<p align="center">
+<img width="380" src="src/hover.jpg" alt="hover">
+</p>
+<div style="page-break-after: always;"></div>
+<p>From the hover box, users can capture the information, such as</p>
+<ul>
+<li><strong>NodeID</strong>: the node identity</li>
+<li><strong>Resource</strong>: the node belongs to which chromosome/sequence in which sample</li>
+<li><strong>Len</strong>: the sequence length of the node</li>
+<li><strong>Pos</strong>: the coordinate of the backbone node</li>
+<li><strong>Info</strong>: if the graph is from a VCF file, it will show the type of variants and the occur position in the backbone sample. <code>SNP</code> represents single nucleotide polymorphism, <code>INS</code> represents insertion, <code>INV</code> represents inversion,  <code>DUP</code> represents duplication and <code>TRANS</code> represents translocation.</li>
+<li><strong>Seq</strong>: the first 10 nucleotides of the node sequence if it has</li>
+</ul>
+<p>If users decide to use <code>vis.js</code> to plot graphs, we also provide some options in <code>Settings</code> to let users customize the plot if they don&apos;t like the default one.</p>
+<ul>
+<li><strong>Graph Interaction</strong>: to enable/disable some functions when interacting with the graph</li>
+</ul>
+<p align="center">
+  <img width="320" src="src/interaction.jpg" alt="interaction">
+</p>  
+<ul>
+<li><strong>Graph Modification</strong>: to customise the display of the graph, for instance the <code>graph layout</code>, <code>edge length</code> and the <code>degree of node overlapping</code>.</li>
+</ul>
+<p align="center">
+  <img width="320" src="src/GM.jpg" alt="GM">
+</p>
+<p>Users can customise the graph by enabling the options and the corresponding options would be shown in the display canvas during <code>graph display</code>.</p>
+<p>While in <code>cytoscape.js</code>-based plot, we do not provide such functions or interactions mentioned in the <code>vis.js</code>-based plot. However, one unique interaction in <code>cytoscape</code>-based plot is that users can press <code>Ctrl</code> or <code>command</code> and hold the <code>left click</code> button of the <code>mouse</code> to select particular node regions and then <code>right</code> click the <code>mouse</code> to show or hide nodes (see the figure below). This would be useful if users want to check a specific subgraph.</p>
+<p align="center">
+<img width="380" src="src/mSelection.jpg" alt="mSelection">
+</p>
+<h3 class="mume-header" id="check-node-information">Check node information</h3>
+
+<p>We provide two ways to check the node information.</p>
+<ul>
+<li>
+<p>One way is that users can move the <code>mouse</code> to a specific node in the display canvas and then a hover box will show the information of the node.</p>
+<p align="center">
+<img width="380" src="src/hover.jpg" alt="hover">
+</p>
+</li>
+<li>
+<p>Another way is that users can check the information of nodes from the <code>Available Nodes</code> panel.</p>
+<p align="center">
+  <img width="320" src="src/aNodes.jpg" alt="aNodes">
+</p>
+<ul>
+<li>In the dropdown menu, the first 20000 nodes in the entire graph will be listed. Users can select the node that they want to check or remove it from the selected list.</li>
+<li>Users can also type the node id in the <code>List of the selected node(s)</code> panel by lines</li>
+<li>Once clicking the <code>Check/Plot</code> button, the program will pop out a diag box asking if users want to browse the sequences of selected nodes or the graph built by the selected nodes. Users can decide by click the corresponding button.</li>
+<li>Users can also click the <code>Save the Sequences</code> button to save the <code>fasta</code> file to the output directory. Users can import the saved sequence file to other programs, such as <code>NCBI-blast</code> for downstream analyses.</li>
+</ul>
+<p>Please <strong>note</strong> that by default we only allow a sequence display with &lt;= <code>1000000</code> bp in length. The reason to do this is that if a large sequence is needed to display, it would take a long time to show. Users can change the setting in <code>Settings</code>--&gt; <code>Graph Modification</code> if they really want to display a large sequence.</p>
+</li>
+</ul>
+<h3 class="mume-header" id="display-gene-models-that-may-be-interrupted-in-some-samples">Display gene models that may be interrupted in some samples</h3>
+
+<p>If users have an annotation file for the <code>backbone</code> sample, they can check gene models that may be interrupted by some sequences in some samples.</p>
+<p align="center">
+  <img width="320" src="src/gene_d.jpg" alt="gene_d">
+</p>
+<p>Basically, users need to</p>
+<ul>
+<li>specify the annotation file and then parse it. By default, gene models having at least <code>2</code> nodes falling in the region can be retained. Users can change this setting in <code>Settings</code> --&gt; <code>Graph Modification</code>.</li>
+<li>once the parsing is completed, users can select a gene model from the dropdown menu to check nodes that fall in the selected gene region.</li>
+</ul>
+<p>After clicking the <code>Plot</code> button, a plot will show in the display canvas.</p>
+<p align="center">
+  <img width="380" src="src/gene.jpg" alt="gene">
+</p>
+<ul>
+<li>Users can enable the zoom in and out function by clicking the <code>Wheel Zoom(x-axis)</code> button on the right top panel in the canvas.</li>
+<li>In the canvas, users can get the selected gene model ID and the nodes falling in the gene region.</li>
+<li>Users can check the nodes through the <code>Available Nodes</code> panel or plot <code>subgraphs</code> using the coordinate of the gene model.</li>
+</ul>
+<div style="page-break-after: always;"></div>
+<h2 class="mume-header" id="how-to-use-web-browser-based-pangraphviewer">How to use web browser-based PanGraphViewer</h2>
+
+<p>After the installation of the web-based PanGraphViewer, users can follow <code>README</code> to open it. The login interface is like:</p>
+<p align="center">
+  <img width="320" src="src/webLogin.jpg" alt="application-web">
+</p>
+<p>Users can use the test account (<code>demo</code>) or personal account to open the application.</p>
+<p>After opening the page showing above, users can</p>
+<ul>
+<li>follow similar approaches used in the <code>desktop-based</code> version, users can <code>upload</code> and <code>parse</code> a GFA file, an <code>rGFA</code> file or a <code>VCF</code> file to the system</li>
+<li>plot pangenome graph/subgraph from the <code>Plot pangenome</code> panel</li>
+<li>explore the node information from the <code>Extract nodes</code> panel</li>
+<li>check gene models that may be interrupted by some sequences in some samples</li>
+</ul>
+<p align="center">
+  <img width="450" src="src/webUI.jpg" alt="webUI">
+</p>
+<p>Notably, when selecting specific nodes in the graph, the web-based application provides options to directly check/download the node sequence(s).</p>
+<p align="center">
+  <img width="400" src="src/sequence_w.jpg" alt="sequence_w">
+</p>
+<p>For the <code>admin</code> account, users can login using the steps shown in the <code>README</code> file. The interface of the login page is like:</p>
+<p align="center">
+  <img width="300" src="src/admin.jpg" alt="admin">
+</p>
+<p>Once entering the login page, the admin can create accounts for either groups or users.</p>
+<p align="center">
+  <img width="300" src="src/admin_p.jpg" alt="admin_p">
+</p>
+<hr>
+<p>Enjoy using PanGraphViewer!</p>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+    
+    
+  
+    </body></html>

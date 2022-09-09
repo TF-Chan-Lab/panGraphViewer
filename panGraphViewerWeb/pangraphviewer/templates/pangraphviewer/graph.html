@@ -61,24 +61,19 @@
 
 <div id="loading" style="display:none"><img id="loading-image" src="{% static 'images/loader.gif' %}" alt="Loading..." width="150" height="150" /></div>
 
-<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script src="{% static 'pangraphviewer/js/cytoscape.min.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/popper.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/cytoscape-popper.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/index.all.min.js' %}"></script>
+<link href="{% static "pangraphviewer/css/index.css" %}" rel="stylesheet" />
 
-<script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@1.0.4/cytoscape-popper.min.js"></script>
-<script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/tippy.js@4.0.1/index.css" />
-
-<script src="https://unpkg.com/layout-base/layout-base.js"></script>
-<script src="https://unpkg.com/cose-base/cose-base.js"></script>
-<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
-
-<script src="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.js"></script>
-<link href="https://unpkg.com/cytoscape-context-menus/cytoscape-context-menus.css" rel="stylesheet" type="text/css" />
+<script src="{% static 'pangraphviewer/js/layout-base.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/cose-base.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/cytoscape-fcose.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/cytoscape-context-menus.js' %}"></script>
+<link href="{% static "pangraphviewer/css/cytoscape-context-menus.css" %}" rel="stylesheet" />
 
 <script src={% static 'pangraphviewer/js/graph.js' %} defer></script>
-<!--
-<script src={% static 'pangraphviewer/js/images.js' %} defer></script>
--->
 
 <ul class="nav nav-tabs" id="myTab" role="tablist">
   <li class="nav-item">
@@ -135,7 +130,7 @@
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align">
                   <i class="fa fa-upload" aria-hidden="true" id="gfa_upload_icon" onclick="$('#gfa_upload').trigger('click')"></i>
-                  <input type="file" name="gfa_upload" id="gfa_upload" accept=".gfa,.rgfa" style="height:1px;width:1px;visibility:hidden;">
+                  <input type="file" name="gfa_upload" id="gfa_upload" accept="{{upload_file_ext.gfa}}" style="height:1px;width:1px;visibility:hidden;">
                 </button>
               </div>
               <div class="col-sm-2">
@@ -179,7 +174,7 @@
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align">
                   <i class="fa fa-upload" aria-hidden="true" id="vcf_upload_icon" onclick="$('#vcf_upload').trigger('click')"></i>
-                  <input type="file" name="vcf_upload" id="vcf_upload" accept=".vcf" style="height:1px;width:1px;visibility:hidden;">
+                  <input type="file" name="vcf_upload" id="vcf_upload" accept="{{upload_file_ext.vcf}}" style="height:1px;width:1px;visibility:hidden;">
                 </button>
               </div>
 
@@ -211,7 +206,7 @@
                 </button>
                 <button type="button" class="btn btn-default" aria-label="Left Align">
                   <i class="fa fa-upload" aria-hidden="true" id="fasta_upload_icon" onclick="$('#fasta_upload').trigger('click')"></i>
-                  <input type="file" name="fasta_upload" id="fasta_upload" accept=".fa,.fasta,.fna" style="height:1px;width:1px;visibility:hidden;">
+                  <input type="file" name="fasta_upload" id="fasta_upload" accept="{{upload_file_ext.fasta}}" style="height:1px;width:1px;visibility:hidden;">
                 </button>
               </div>
 
@@ -229,7 +224,7 @@
         <a class="nav-link disabled" id="plot_tab" data-toggle="pill" href="#plot">Plot pangenome (sub)graph</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link disabled" id="extract_node_tab" data-toggle="pill" href="#extract_node">Extract nodes</a>
+        <a class="nav-link disabled" id="extract_node_tab" data-toggle="pill" href="#extract_node">Extract / Plot by node IDs</a>
       </li>
       <li class="nav-item">
         <a class="nav-link disabled" id="overlap_gene_tab" data-toggle="pill" href="#overlap_gene">Plot nodes falling in a gene region</a>
@@ -266,81 +261,73 @@
     </div>
   </div>
   <div class="tab-pane tab-pane2 container disabled" id="extract_node">
-        <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Input node IDs<br>(separated by ',')</label>
-          <div class="col-sm-10">
-            <div class="form-row">
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <textarea class="form-control" id="extract_node_node_id" rows="3" placeholder="Input node IDs"></textarea>
-                </div>
-              </div>
-              <div class="col-sm-1">
-                <button type="button" id="extract_node_check_btn" class="btn btn-default" aria-label="Left Align">
-                  <i class="fas fa-spell-check" aria-hidden="true"></i>
-                </button>
-              </div>
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <textarea class="form-control" id="extract_node_checked_node_id" rows="3" placeholder="Checked node IDs" readonly></textarea>
-                </div>
-              </div>
-              <div class="col-sm-1">
-              </div>
-              <div class="col-sm-2">
-                <button type=button id="extract_node_view_btn" class="btn btn-primary btn-block">View</button>
-              </div>
-              <div class="col-sm-2">
-                <!--
-                <button type="button" id="extract_node_download_btn" class="btn btn-default" aria-label="Left Align">
-                  <i class="fa fa-download" aria-hidden="true"></i>
-                </button>
-                -->
-                <button type=button id="extract_node_download_btn" class="btn btn-primary btn-block">Download</button>
-              </div>
+    <div class="form-group row">
+      <label class="col-sm-2 col-form-label">Input node IDs<br>(1 node ID per line)</label>
+      <div class="col-sm-10">
+        <div class="form-row">
+          <div class="col-sm-3">
+            <div class="form-group">
+              <textarea class="form-control" id="extract_node_node_id" rows="3" placeholder="Input node IDs"></textarea>
             </div>
           </div>
+          <div class="col-sm-1">
+            <button type="button" id="extract_node_check_btn" class="btn btn-default" aria-label="Left Align">
+              <i class="fas fa-spell-check" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <textarea class="form-control" id="extract_node_checked_node_id" rows="3" placeholder="Checked node IDs" readonly></textarea>
+            </div>
+          </div>
+          <div class="col-sm-1">
+          </div>
+          <div class="col-sm-1">
+            <button type=button id="extract_node_view_btn" class="btn btn-primary btn-block">View</button>
+          </div>
+          <div class="col-sm-1">
+            <button type=button id="extract_node_plot_btn" class="btn btn-primary btn-block">Plot</button>
+          </div>
+          <div class="col-sm-2">
+            <button type=button id="extract_node_download_btn" class="btn btn-primary btn-block">Download</button>
+          </div>
         </div>
-
+      </div>
+    </div>
   </div>
   <div class="tab-pane tab-pane2 container" id="overlap_gene">
-        <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Uploaded BED/GTF/GFF file (*)</label>
-          <div class="col-sm-10">
+    <div class="form-group row">
+      <label class="col-sm-2 col-form-label">Uploaded BED/GTF/GFF file (*)</label>
+      <div class="col-sm-10">
 
-            <div class="form-row">
-              <div class="col-sm-4">
-                <select class="form-control" id='bed_path' placeholder="bed" onchange="bed_path_onchange()">
-                  <option value=''>Select uploaded BED/GTF/GFF</option>
-                </select>
-              </div>
-              <div class="col">
-                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('bed_path','bed')">
-                  <i class="fa fa-sync-alt" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('bed_path','bed')">
-                  <i class="fa fa-trash" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('bed_path','bed')">
-                  <i class="fa fa-download" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="btn btn-default" aria-label="Left Align">
-                  <i class="fa fa-upload" aria-hidden="true" id="bed_upload_icon" onclick="$('#bed_upload').trigger('click')"></i>
-                  <input type="file" name="bed_upload" id="bed_upload" accept=".bed,.gtf,.gff,.gff3" style="height:1px;width:1px;visibility:hidden;">
-                </button>
-              </div>
-              <div class="col-sm-2">
-                <!--
-                <button type="button" id="parse-bed-btn" class="btn btn-default" aria-label="Left Align">
-                  <i class="fa fa-search" aria-hidden="true"></i>
-                </button>
-                -->
-                <button type=button id="parse-bed-btn" class="btn btn-primary btn-block">Find overlap gene</button>
-              </div>
-            </div>
-
+        <div class="form-row">
+          <div class="col-sm-4">
+            <select class="form-control" id='bed_path' placeholder="bed" onchange="bed_path_onchange()">
+              <option value=''>Select uploaded BED/GTF/GFF</option>
+            </select>
+          </div>
+          <div class="col">
+            <button type="button" class="btn btn-default" aria-label="Left Align" onclick="refresh_uploaded_list('bed_path','bed')">
+              <i class="fa fa-sync-alt" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Left Align" onclick="delete_uploaded('bed_path','bed')">
+              <i class="fa fa-trash" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Left Align" onclick="download_uploaded('bed_path','bed')">
+              <i class="fa fa-download" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Left Align">
+              <i class="fa fa-upload" aria-hidden="true" id="bed_upload_icon" onclick="$('#bed_upload').trigger('click')"></i>
+              <input type="file" name="bed_upload" id="bed_upload" accept="{{upload_file_ext.bed}}" style="height:1px;width:1px;visibility:hidden;">
+            </button>
+          </div>
+          <div class="col-sm-2">
+            <button type=button id="parse-bed-btn" class="btn btn-primary btn-block">Find overlap genes</button>
           </div>
         </div>
+
+      </div>
+    </div>
 
     <div class="form-group row">
       <label class="col-sm-2 col-form-label">Overlap genes (*)</label>
@@ -355,11 +342,6 @@
           </div>
           <div class="col-sm-2">
             <button type=button class="btn btn-primary btn-block" id="plot-gene-btn">Plot</button>
-            <!--
-            <button type="button" id="plot-gene-btn" class="btn btn-default" aria-label="Left Align">
-              <i class="fa fa-image" aria-hidden="true"></i>
-            </button>
-            -->
           </div>
         </div>
       </div>
@@ -381,8 +363,8 @@
         <div class="col-sm-3">
           <h1>
             PanGraphViewer is a tool helping to create a graph-based pangenome 
-            using a given VCF file with or without a FASTA file. It can also accept a reference 
-            graphical fragment assembly (rGFA) file from other software, such as minigraph. 
+            using a given VCF file with or without a FASTA file. It can also accept a (reference) 
+            graphical fragment assembly (GFA) file from other software, such as minigraph and VG. 
             PanGraphViewer shows genome graph in a graphical user interface (GUI) or a webpage.
           </h1>
 
@@ -395,12 +377,12 @@
 
           <h1>
             PanGraphViewer also provides functions to check the sequence of selected
-            nodes and enable users to save/download the corresponding sequences when 
+            nodes and enable users to browse/download the corresponding sequences when 
             right click the mouse.
           </h1>
 
           <h1>
-            PanGraphViewer provides an easy way to display a pangenome graph from rGFA or VCF files.
+            PanGraphViewer provides an easy way to display a pangenome graph from (r)GFA or VCF files.
           </h1>
 
         </div>
@@ -408,7 +390,7 @@
     </div>
 
     <div class="footer" role="contentinfo" style="text-align:center">
-      © 2021 The TF Chan Lab, the Chinese University of Hong Kong - All Rights Reserved
+      © 2021-2022 The TF Chan Lab, the Chinese University of Hong Kong - All Rights Reserved
     </div>
     <br><br>
 

@@ -12,7 +12,7 @@ const getdata_url = document.getElementById('getdata_url').value
 var sample_list = '';
 var gene_info;
 
-function gen_graph(chr, start, end, tabHeader) {
+function gen_graph(chr, start, end, tabHeader, by_node_id=false) {
     var url = getdata_url;
     var input_type = document.getElementById('input_type').value;
     var gfa = document.getElementById('gfa_path').value;
@@ -22,6 +22,11 @@ function gen_graph(chr, start, end, tabHeader) {
     if (!chr) chr = document.getElementById('chr').value;
     if (!start) start = document.getElementById('start').value;
     if (!end) end = document.getElementById('end').value;
+
+    node_ids = null;
+    if (by_node_id) {
+        node_ids = $('#extract_node_checked_node_id').val();
+    }
 
     if (input_type == 'vcf') {
         str = 'While a fasta file is missing, we can still generate a graph. However, node sequence checking will not be available. Do you want to continue ?';
@@ -44,7 +49,7 @@ function gen_graph(chr, start, end, tabHeader) {
     update_alert_box('Generating data ...', 'alert-info')
 
     data = {'csrfmiddlewaretoken': csrf[0].value,'input_type':input_type,'gfa':gfa,'vcf':vcf,'fasta':fasta,
-            'backbone':backbone,'chr':chr,'start':start,'end':end,'sample_list':sample_list}
+            'backbone':backbone,'chr':chr,'start':start,'end':end,'sample_list':sample_list,'node_ids':node_ids}
 
     $.ajax({
         type:'POST',
@@ -67,8 +72,8 @@ function gen_graph(chr, start, end, tabHeader) {
             result_gfa = result.gfa
             addOutputTab(title, cyData, result_gfa, legend, tabHeader);
         },
-        error: function(response) {
-            obj = response.responseJSON;
+        error: function(result) {
+            obj = result.responseJSON;
             str = 'Generation failed';
             if (obj && 'msg' in obj) str += ': '+ obj.msg;
             update_alert_box(str, 'alert-danger')
@@ -139,6 +144,14 @@ $('#parse-btn').click(function() {
             // enable inputs in tab-content
             $("#tab-content-action :input").prop('disabled', false)
             $("#bed_path").trigger('change');
+
+            // disable specific controls
+            btn = ['extract_node_view_btn',
+                   'extract_node_plot_btn',
+                   'extract_node_download_btn'];
+            $.each(btn, function(index, value) {
+              $(`#${value}`).prop('disabled', true);
+            });
         },
         error: function(result) {
             /*
@@ -349,13 +362,19 @@ function gene_onchange() {
 }
 
 function download_sequence(ids, gfa_path) {
-    var url = 'downloadseq?gfa=' + gfa_path + '&seqname=' + ids;
-    window.open(url);
+    var form = $('<form></form>').attr('action', 'downloadseq').attr('method', 'post');
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'csrfmiddlewaretoken').attr('value', csrf[0].value));
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'gfa').attr('value', gfa_path));
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'seqname').attr('value', ids));
+    form.appendTo('body').submit().remove();
 }
 
 function view_sequence(ids, gfa_path) {
-    var url = 'viewseq?gfa='+ gfa_path + '&seqname=' + ids;
-    window.open(url);
+    var form = $('<form></form>').attr('action', 'viewseq').attr('method', 'post').attr('target','_blank');
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'csrfmiddlewaretoken').attr('value', csrf[0].value));
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'gfa').attr('value', gfa_path));
+    form.append($("<input></input>").attr('type', 'hidden').attr('name', 'seqname').attr('value', ids));
+    form.appendTo('body').submit().remove();
 }
 
 function drawGraph2(loadStatusId, cyId, cyData) {
@@ -409,15 +428,21 @@ function drawGraph2(loadStatusId, cyId, cyData) {
             {
                 selector: 'edge',
                 style: {
-                    'width': 0.5,
+                    'source-label': 'data(sourceLabel)',
+                    'target-label': 'data(targetLabel)',
+                    'width': 'data(weight)',
                     'opacity': 0.5,
                     'line-color':'data(color)',
                     'arrow-scale': 1.1,
                     'curve-style': 'unbundled-bezier',
                     'control-point-distance': 7,
                     'control-point-weight': '0.5',
-                    'target-arrow-shape':'triangle-backcurve',
+                    'target-arrow-shape':'data(arrow)',
                     'target-arrow-color':'data(color)',
+                    'font-size':'20px',
+                    'color':'red',
+                    'source-text-offset':'7px',
+                    'target-text-offset':'7px',
                 }
             },
 
@@ -524,6 +549,33 @@ function drawGraph2(loadStatusId, cyId, cyData) {
 
     cy.nodes().unbind('mouseout');
     cy.nodes().bind('mouseout', (event) => event.target.tippy.hide());
+
+    var minX=null, minY=null, maxX=null, maxY=null;
+    cy.nodes().forEach(function(ele) {
+        var x = ele.position().x;
+        var y = ele.position().y;
+
+        if (!minX || x < minX) minX = x;
+        if (!maxX || x > maxX) maxX = x;
+        if (!minY || y < minY) minY = y;
+        if (!maxY || y > maxY) maxY = y;
+    });
+    minX -= 50; minY -= 50;
+    maxX += 50; maxY += 50;
+    edge_weight = (maxX - minX)/1000;
+    color = '#777777';
+    shape = 'ellipse';
+    weight = 75;
+    cy.add([{group:'nodes', data:{ id:'nodeA', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:minX, y:minY}},
+            {group:'nodes', data:{ id:'nodeB', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:minX, y:maxY}},
+            {group:'nodes', data:{ id:'nodeC', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:maxX, y:maxY}},
+            {group:'nodes', data:{ id:'nodeD', name:'', weight:weight, shape:shape, size:1, color:color}, position:{x:maxX, y:minY}},
+
+            {group:'edges', data:{ id:'border1', weight:edge_weight, source:'nodeA', target:'nodeB', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+            {group:'edges', data:{ id:'border2', weight:edge_weight, source:'nodeB', target:'nodeC', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+            {group:'edges', data:{ id:'border3', weight:edge_weight, source:'nodeC', target:'nodeD', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+            {group:'edges', data:{ id:'border4', weight:edge_weight, source:'nodeD', target:'nodeA', color:color, arrow:'none', sourceLabel:'', targetLabel:''}},
+    ]);
 }
 
 var gId=1;
@@ -541,6 +593,7 @@ function addOutputTab(title, cyData, gfa, legend, tabHeader) {
     loadStatusId = 'loadStatus' + id;
     gfaPathId = 'gfa_path' + id;
     captureBtnId = 'captureBtnId' + id;
+    reposBtnId = 'reposBtnId' + id;
 
     if (!tabHeader) tabHeader = title;
 
@@ -558,10 +611,11 @@ function addOutputTab(title, cyData, gfa, legend, tabHeader) {
         $('#myTab a:first').tab('show');
     });
 
+    reposBtnStr = `<button type="button" class="btn btn-default repos_btn" id="${reposBtnId}" onclick="repos_cy(${id})"><i class="fa fa-sync-alt" aria-hidden="true"></i></button>`
     captureBtnStr = `<button type="button" class="btn btn-default capture_btn" id="${captureBtnId}" onclick="capture_cy(${id})"><i class="fas fa-camera" aria-hidden="true"></i></button>`
     legendStr = `<div class="myDIV">Legend (mouseover here to show)</div>`
     legendStr += `<div class="hide"><table><tr><td style="display: table-cell;vertical-align: top"><div id='colorTable${id}'></div></td><td style="display: table-cell;vertical-align: top"><div id='shapeTable${id}'></div></td></tr></table></div>`
-    body = `<center><h1>${title}${captureBtnStr}</h1>${legendStr}</center><div class="cy" id="${cyId}"></div><input type=hidden id="${loadStatusId}" value="-1">`
+    body = `<center><h1>${title}${reposBtnStr}${captureBtnStr}</h1>${legendStr}</center><div class="cy" id="${cyId}"></div><input type=hidden id="${loadStatusId}" value="-1">`
     body += `<input type=hidden id="${gfaPathId}" value="${gfa}">`
 
     tab = `<div class="tab-pane fade show" id="${tabContentId}" role="tabpanel" aria-labelledby="${tabId}">${body}</div>`;
@@ -596,6 +650,8 @@ function upload_add_listener_change(prefix) {
         fd.append('csrfmiddlewaretoken', csrf[0].value)
         fd.append('image', file_data)
         fd.append('file_type', prefix)
+
+        control_plot_input(file_type, 'reset');
 
         if (file_type == 'gfa') $('#parse-btn').prop('disabled', true);
         else if (file_type == 'vcf') $('#parse-vcf-btn').prop('disabled', true);
@@ -723,20 +779,29 @@ function delete_uploaded(dropdown_id, file_type) {
 
 function control_plot_input(file_type, action) {
     if (action=='reset') {
-        dropdownlist_ids = ['backbone','chr']
+        //dropdownlist_ids = ['backbone','chr']
+        dropdownlist_ids = ['backbone','chr','bed_path','gene']
         $.each(dropdownlist_ids, function(index, value) {
             $(`#${value}`).find('option:not(:first)').remove();
         });
 
-        input_ids = ['start','end']
+        //input_ids = ['start','end']
+        input_ids = ['start','end','extract_node_node_id','extract_node_checked_node_id']
         $.each(input_ids, function(index, value) {
             $(`#${value}`).val('');
         });
 
-        input_ids = ['backbone','chr','start','end','plot-btn']
+        //input_ids = ['backbone','chr','start','end','plot-btn']
+        input_ids = ['backbone','chr','start','end','plot-btn',
+                     'extract_node_node_id','extract_node_checked_node_id','extract_node_view_btn','extract_node_plot_btn','extract_node_download_btn',
+                     'bed_path','gene','parse-bed-btn','plot-gene-btn']
         $.each(input_ids, function(index, value) {
             $(`#${value}`).prop('disabled', true);
         });
+
+        // disable tabs
+        $("#tab-action a").addClass('disabled')
+        $("#tab-action a").removeClass('active')
     }
     val = $(`#${file_type}_path`).val()
     update_related_control(file_type,val);
@@ -808,60 +873,87 @@ function manage_file(action, file_name, file_type, select_id) {
 }
 
 function plot_gene(gfa, bed, gene_id) {
-   chr = gene_info[gene_id]['gene_chr'];
-   start = gene_info[gene_id]['gene_start'];
-   end = gene_info[gene_id]['gene_end'];
-   gen_graph(chr, start, end, `Subgraph within the region of Gene: ${gene_id}`);
-   url = `draw_overlap_gene?gfa=${gfa}&bed=${bed}&gene_id=${gene_id}`
-   window.open(url);
+    chr = gene_info[gene_id]['gene_chr'];
+    start = gene_info[gene_id]['gene_start'];
+    end = gene_info[gene_id]['gene_end'];
+    gen_graph(chr, start, end, `Subgraph within the region of Gene: ${gene_id}`);
+    url = `draw_overlap_gene?gfa=${gfa}&bed=${bed}&gene_id=${gene_id}`
+    window.open(url);
 }
 
 $('#extract_node_view_btn').click(function () {
-  var gfa = $('#gfa_path').val();
-  var input_ids = $('#extract_node_node_id').val();
-  var checked_ids = $('#extract_node_checked_node_id').val();
+    var gfa = $('#gfa_path').val();
+    var input_ids = $('#extract_node_node_id').val();
+    var checked_ids = $('#extract_node_checked_node_id').val();
 
-  if (!gfa) {
-    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
-    document.getElementById('gfa_path').focus();
-    return;
-  }
-
-  if (!checked_ids) {
-    if (input_ids) {
-      update_alert_box('Input node ids are not found. Please input node ids and check again', 'alert-danger')
-    } else {
-      update_alert_box('Please input node ids', 'alert-danger')
+    if (!gfa) {
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger');
+        document.getElementById('gfa_path').focus();
+        return;
     }
-    document.getElementById('extract_node_node_id').focus();
-    return;
-  }
 
-  view_sequence(checked_ids, gfa);
+    if (!checked_ids) {
+        if (input_ids) {
+            update_alert_box('Checked node IDs empty. Node IDs not found, or missing press Check button to get checked node IDs', 'alert-danger');
+            document.getElementById('extract_node_check_btn').focus();
+        } else {
+            update_alert_box('Please input node ids', 'alert-danger')
+            document.getElementById('extract_node_node_id').focus();
+        }
+        return;
+    }
+
+    view_sequence(checked_ids, gfa);
+});
+
+$('#extract_node_plot_btn').click(function () {
+    var gfa = $('#gfa_path').val();
+    var input_ids = $('#extract_node_node_id').val();
+    var checked_ids = $('#extract_node_checked_node_id').val();
+
+    if (!gfa) {
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
+        document.getElementById('gfa_path').focus();
+        return;
+    }
+
+    if (!checked_ids) {
+        if (input_ids) {
+            update_alert_box('Checked node IDs empty. Node IDs not found, or missing press Check button to get checked node IDs', 'alert-danger');
+            document.getElementById('extract_node_check_btn').focus();
+        } else {
+            update_alert_box('Please input node ids', 'alert-danger')
+            document.getElementById('extract_node_node_id').focus();
+        }
+        return;
+    }
+
+    gen_graph(null, null, null, 'Plot by node IDs', true);
 });
 
 $('#extract_node_download_btn').click(function () {
-  var gfa = $('#gfa_path').val();
-  var input_ids = $('#extract_node_node_id').val();
-  var checked_ids = $('#extract_node_checked_node_id').val();
+    var gfa = $('#gfa_path').val();
+    var input_ids = $('#extract_node_node_id').val();
+    var checked_ids = $('#extract_node_checked_node_id').val();
 
-  if (!gfa) {
-    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
-    document.getElementById('gfa_path').focus();
-    return;
-  }
-
-  if (!checked_ids) {
-    if (input_ids) {
-      update_alert_box('Input node ids are not found. Please input node ids and check again', 'alert-danger')
-    } else {
-      update_alert_box('Please input node ids', 'alert-danger')
+    if (!gfa) {
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
+        document.getElementById('gfa_path').focus();
+        return;
     }
-    document.getElementById('extract_node_node_id').focus();
-    return;
-  }
 
-  download_sequence(checked_ids, gfa);
+    if (!checked_ids) {
+        if (input_ids) {
+            update_alert_box('Checked node IDs empty. Node IDs not found, or missing press Check button to get checked node IDs', 'alert-danger');
+            document.getElementById('extract_node_check_btn').focus();
+        } else {
+            update_alert_box('Please input node ids', 'alert-danger')
+            document.getElementById('extract_node_node_id').focus();
+        }
+        return;
+    }
+
+    download_sequence(checked_ids, gfa);
 });
 
 function check_node_id(gfa, input_ids) {
@@ -879,71 +971,90 @@ function check_node_id(gfa, input_ids) {
         data: post_data,
         success: function(result) {
             $('#extract_node_checked_node_id').val(result.checked_node_ids);
-            input_arr = input_ids.replace(/(^,)|(,$)|( )/g, "").split(',').filter(x=>x != '');
-            checked_arr = result.checked_node_ids.replace(/(^,)|(,$)|( )/g, "").split(',').filter(x=>x != '');
 
-            if (input_arr.length != checked_arr.length) {
-                update_alert_box(`Some input node ids cannot be found. Please check`, 'alert-info');
-            } else {
-                update_alert_box(`Node ids checked`, 'alert-success');
-            }
+            btn = ['extract_node_view_btn',
+                   'extract_node_plot_btn',
+                   'extract_node_download_btn'];
+
+            $.each(btn, function(index, value) {
+              $(`#${value}`).prop('disabled', false);
+            });
+
+            update_alert_box(`Node ids checked`, 'alert-success');
         },
         error: function(result) {
-            update_alert_box(`Error in checking node ids`, 'alert-danger');
+            //update_alert_box(`Error in checking node IDs`, 'alert-danger');
+            obj = result.responseJSON;
+            str = 'Error in checking node ID';
+            if (obj && 'msg' in obj) str += ': '+ obj.msg;
+            update_alert_box(str, 'alert-danger');
         }
     });
-
 }
 
 $('#extract_node_check_btn').click(function () {
-  var gfa = $('#gfa_path').val();
-  var input_ids = $('#extract_node_node_id').val();
+    var gfa = $('#gfa_path').val();
+    var input_ids = $('#extract_node_node_id').val();
 
-  if (!gfa) {
-    update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
-    document.getElementById('gfa_path').focus();
-    return;
-  }
+    if (!gfa) {
+        update_alert_box('Please select uploaded (r)GFA file, or upload new local (r)GFA file', 'alert-danger')
+        document.getElementById('gfa_path').focus();
+        return;
+    }
 
-  if (!input_ids) {
-    update_alert_box('Please input node ids', 'alert-danger')
-    document.getElementById('extract_node_node_id').focus();
-    return;
-  }
+    if (!input_ids) {
+        update_alert_box('Please input node ids', 'alert-danger')
+        document.getElementById('extract_node_node_id').focus();
+        return;
+    }
 
-  check_node_id(gfa, input_ids);
+    $('#extract_node_checked_node_id').val('');
+    btn = ['extract_node_view_btn',
+           'extract_node_plot_btn',
+           'extract_node_download_btn'];
+    $.each(btn, function(index, value) {
+        $(`#${value}`).prop('disabled', true);
+    });
+
+    update_alert_box('Checking node IDs ...', 'alert-info')
+    check_node_id(gfa, input_ids);
 });
 
 function update_related_control(update_type, update_value) {
-  if (update_type == 'gfa' || update_type == 'vcf') {
-    if (update_value == '') {
-      // disable tabs
-      $("#tab-action a").addClass('disabled')
-      $("#tab-action a").removeClass('active')
+    if (update_type == 'gfa' || update_type == 'vcf') {
+        if (update_value == '') {
+            // disable tabs
+            $("#tab-action a").addClass('disabled')
+            $("#tab-action a").removeClass('active')
 
-      // disable inputs in tab-content
-      $("#tab-content-action :input").prop('disabled', true)
+            // disable inputs in tab-content
+            $("#tab-content-action :input").prop('disabled', true)
 
-      // disable buttons
-      if (update_type == 'gfa') $('#parse-btn').prop('disabled', true);
-      else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', true);
+            // disable buttons
+            if (update_type == 'gfa') $('#parse-btn').prop('disabled', true);
+            else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', true);
+        }
+        else {
+            // enable buttons
+            if (update_type == 'gfa') $('#parse-btn').prop('disabled', false);
+            else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', false);
+        }
     }
-    else {
-      // enable buttons
-      if (update_type == 'gfa') $('#parse-btn').prop('disabled', false);
-      else if (update_type == 'vcf') $('#parse-vcf-btn').prop('disabled', false);
-    }
-  }
 }
 
 function capture_cy(id) {
-  let div = document.getElementById(`cy${id}`);
-  html2canvas(div).then(function (canvas) {
-    var link = document.createElement('a');
-    link.download = 'screencapture.png';
-    link.href = canvas.toDataURL()
-    link.click();
-  });
+    let div = document.getElementById(`cy${id}`);
+    html2canvas(div).then(function (canvas) {
+        var link = document.createElement('a');
+        link.download = 'screencapture.png';
+        link.href = canvas.toDataURL()
+        link.click();
+        alert('Screen is captured and downloaded');
+    });
+}
+
+function repos_cy(id) {
+    document.getElementById(`cy${id}`)._cyreg.cy.fit();
 }
 
 function add_legend(id, data) {
