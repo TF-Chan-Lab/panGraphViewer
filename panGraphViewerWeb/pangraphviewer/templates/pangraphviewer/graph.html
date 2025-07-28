@@ -4,7 +4,12 @@
 
 {% load static %}
 
-<script src="{% static 'fontawesome_free/js/all.min.js' %}"></script>
+<!--
+<link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
+-->
+<link href="{% static 'fontawesomefree/css/all.min.css' %}" rel="stylesheet" type="text/css">
 
 <style>
     .cy {
@@ -72,6 +77,9 @@
 <script src="{% static 'pangraphviewer/js/cytoscape-fcose.js' %}"></script>
 <script src="{% static 'pangraphviewer/js/cytoscape-context-menus.js' %}"></script>
 <link href="{% static "pangraphviewer/css/cytoscape-context-menus.css" %}" rel="stylesheet" />
+
+<script src="{% static 'pangraphviewer/js/dagre.js' %}"></script>
+<script src="{% static 'pangraphviewer/js/cytoscape-dagre.js' %}"></script>
 
 <script src={% static 'pangraphviewer/js/graph.js' %} defer></script>
 
@@ -238,12 +246,12 @@
       <div class="col-sm-10">
         <div class="form-row">
           <div class="col">
-            <select class="form-control" id='backbone' placeholder="backbone" required=True disabled>
+            <select class="form-control" id='backbone' placeholder="backbone" onchange="backbone_onchange()" required=True disabled>
               <option value=''>Select backbone</option>
             </select>
           </div>
           <div class="col">
-            <select class="form-control" id='chr' placeholder="chr" required=True disabled>
+            <select class="form-control" id='chr' placeholder="chr" onchange="chr_onchange()" required=True disabled>
               <option value=''>Select chr</option>
             </select>
           </div>

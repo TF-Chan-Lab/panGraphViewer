@@ -1,9 +1,14 @@
 from django.urls import path, re_path
 
+from django.views.generic import RedirectView
+from django.conf.urls import url
+
 from . import views
 
 urlpatterns = [
     re_path(r'^$', views.graph, name='default'),
+
+    url(r'^favicon\.ico$',RedirectView.as_view(url='/static/favicon.ico')),
 
     # main pages
     path('graph', views.graph, name='graph'),

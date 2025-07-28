@@ -91,6 +91,11 @@ class DrawGraphResult:
         panGraph.subNodesCount = obj['subNodesCount']
         panGraph.drawGraphResult = {'outHtml':obj['outHtml']}
 
+class FormatException(Exception):
+    def __init__(self, message="Format error occurred"):
+        super().__init__(message)
+        self.custom_data = "Optional additional data"
+
 class PanGraph:
     seqDescLen = 10
     SN_delim = getVar(copied, 'nodes', 'SN_delim', mustHave=True)
@@ -165,7 +170,8 @@ class PanGraph:
     def parseRGFA(self, nodeIdDict):
         samples = {}
         neededGFA = False
-        backbone = {'name':None, 'contigs':{}}
+        #backbone = {'name':None, 'contigs':{}}
+        backbone = {}
         nodeIdDDlist = []
 
         rawNodeData = {}
@@ -201,17 +207,21 @@ class PanGraph:
                             sample = res.split(self.SN_delim)[0]
                             contig = self.SN_delim.join(res.split(self.SN_delim)[1:])
                         else:
-                            neededGFA = True
-                            sample = rank
-                            contig = res
+                            #neededGFA = True
+                            #sample = rank
+                            #contig = res
+                            raise FormatException()
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
                         samples[sample] = 1
                         if rank == '0':
-                            backbone['contigs'][contig] = 1
-                            backbone['name'] = sample
+                            if sample not in backbone:
+                                backbone[sample] = {'name':'', 'contigs':{}}
+                            backbone[sample]['contigs'][contig] = 1
+                            backbone[sample]['name'] = sample
 
-                        rawNodeData[nodeId] = [fileOffset, len(line), rank, contig, lenBefore, seqLen]
+                        # not needed (TBC)
+                        #rawNodeData[nodeId] = [fileOffset, len(line), rank, contig, lenBefore, seqLen]
                     elif line[0] == 'L':
                         row = line.split()
                         fromNodeId, fromNodeStrand, toNodeId, toNodeStrand = row[1:5]
@@ -219,10 +229,13 @@ class PanGraph:
                         if nodeIdDict and (fromNodeId not in nodeIdDict or toNodeId not in nodeIdDict):
                             continue
 
-                        str = f'{fromNodeId}|{fromNodeStrand}|{toNodeId}|{toNodeStrand}'
-                        rawEdgeData.append(str)
+                        # not needed (TBC)
+                        #str = f'{fromNodeId}|{fromNodeStrand}|{toNodeId}|{toNodeStrand}'
+                        #rawEdgeData.append(str)
 
                     fileOffset += len(line)
+            except FormatException as e:
+                neededGFA = 1
             except Exception as e:
                 logging.error(f'!!!!! Parsing aborted: invalid format at line: {lineNum}')
                 neededGFA = -1
@@ -232,11 +245,13 @@ class PanGraph:
             if self.illegalrGFA == 0:
                 self.illegalrGFA += 1
                 if self.illegalrGFA < 2:
-                    logging.warning("!!!!! Not the wanted rGFA format. Please refer to 'Manual' to generate a proper one")
+                    logging.warning("!!!!! Not the expected rGFA format. Please refer to 'Manual' to generate a proper one")
                 else:
                     self.illegalrGFA == 0
 
-        backbone['contigs'] = list(backbone['contigs'].keys())
+        #backbone['contigs'] = list(backbone['contigs'].keys())
+        for bb in backbone:
+             backbone[bb]['contigs'] = list(backbone[bb]['contigs'].keys())
         #nodeIdDDlist = natsorted(nodeIdDDlist)
         if len(rawNodeData) > self.maxNodeCount:
             self.exceedNodeIdCount = True
@@ -339,7 +354,8 @@ class PanGraph:
                     sample = tags['SR'] if 'SR' in tags else ''
                     contig = res
                 lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                #inf = {'sv_type':tags['INF'].split(self.SN_delim)[1],'raw':tags['INF']} if 'INF' in tags else {}
+                inf = {'sv_type':tags['INF'].replace('_',self.SN_delim).split(self.SN_delim)[1],'raw':tags['INF']} if 'INF' in tags else {}
 
                 seq = None
                 self.nodes[nodeId] = [seqDesc, seqLastDesc, seqLen, seq, sample, contig, lenBefore, rank, inf, None, None]
@@ -424,12 +440,25 @@ class PanGraph:
                         #seqLastDesc = seq[-self.seqDescLen:]
                         rank = tags['SR'] if 'SR' in tags else ''
                         res = tags['SN'] if 'SN' in tags else ''
+
+                        """
                         if len(res.split(self.SN_delim)) == 2:
                             sample = res.split(self.SN_delim)[0]
                             contig = res.split(self.SN_delim)[1]
                         else:
                             sample = tags['SR'] if 'SR' in tags else ''
                             contig = res
+                        """
+                        if len(res.split(self.SN_delim)) >= 2:
+                            if 'SR' in tags:
+                                sample = res.split(self.SN_delim)[0] if tags['SR'] == '0' else 'Samples'
+                            else:
+                                sample = res.split(self.SN_delim)[0]
+                            contig = res.split(self.SN_delim)[1]
+                        else:
+                            sample = res.split(self.SN_delim)[0]
+                            contig = res
+
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
                         if rank != '0' and sampleList and sample not in sampleList:
@@ -456,6 +485,7 @@ class PanGraph:
                     elif line[0] == 'L':
                         row = line.strip().split('\t')
                         fromNodeId, fromStrand, toNodeId, toStrand = row[1:5]
+                        tags = {val.split(':')[0]:val.split(':')[2] for val in row[6:]}
 
                         if fromNodeId not in G.nodes or toNodeId not in G.nodes:
                             continue
@@ -480,7 +510,7 @@ class PanGraph:
                                     G.add_node(toNodeId)
                         """
 
-                        G.add_edge(fromNodeId, toNodeId, strands=f'{fromStrand}{toStrand}')
+                        G.add_edge(fromNodeId, toNodeId, strands=f'{fromStrand}{toStrand}', tags=tags)
 
             except Exception as e:
                 logging.error(f'!!!!! Loading aborted: invalid format at line: {lineNum}: {line}')
@@ -536,14 +566,28 @@ class PanGraph:
                         seqLastDesc = seq[-self.seqDescLen:]
                         rank = tags['SR'] if 'SR' in tags else ''
                         res = tags['SN'] if 'SN' in tags else ''
+
+                        """
                         if len(res.split(self.SN_delim)) == 2:
                             sample = res.split(self.SN_delim)[0]
                             contig = res.split(self.SN_delim)[1]
                         else:
                             sample = tags['SR'] if 'SR' in tags else ''
                             contig = res
+                        """
+                        if len(res.split(self.SN_delim)) >= 2:
+                            if 'SR' in tags:
+                                sample = res.split(self.SN_delim)[0] if tags['SR'] == '0' else 'Samples'
+                            else:
+                                sample = res.split(self.SN_delim)[0]
+                            contig = res.split(self.SN_delim)[1]
+                        else:
+                            sample = res.split(self.SN_delim)[0]
+                            contig = res
+
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                        inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                        inf = {'sv_type':tags['INF'].split(self.SN_delim)[1],'raw':tags['INF']} if 'INF' in tags else {}
+                        #inf = {'sv_type':tags['INF'].split('_')[1],'raw':tags['INF']} if 'INF' in tags else {}
 
                         seq = None
                         if nodeId in subNodes:
@@ -625,7 +669,7 @@ class PanGraph:
         except Exception as e:
             self.error_unknown = 1
 
-            #raise e
+            raise e
             return None
 
     def checkNodeIds(self, nodeIdDict, targetChr):
@@ -644,6 +688,8 @@ class PanGraph:
         return count
 
     def drawGraphByNodeId(self, sampleList, targetChr, nodeIdDict, isGenHtml=True):
+        print('drawGraphByNodeId()')
+
         self.error_unknown = 0
         self.drawgraph_by_nodeids = True
 
@@ -834,8 +880,8 @@ class PanGraph:
                 if nodeId not in plotNodes:
                     plotNodes.append(nodeId)
                     if len(node[NODE.inf]) != 0 and node[NODE.inf]['sv_type'] == 'DUP':
-                        sPos = int(node[NODE.inf]['raw'].split('_')[1])
-                        ePos = int(node[NODE.inf]['raw'].split('_')[2])
+                        sPos = int(node[NODE.inf]['raw'].split(self.SN_delim)[1])
+                        ePos = int(node[NODE.inf]['raw'].split(self.SN_delim)[2])
                         self.features.append(GraphicFeature(start=sPos, end=ePos, strand=0,
                                                 color=self.nameCols[node[NODE.sample]], label="This is node '%s'" % nodeId))
                     else:
@@ -895,7 +941,7 @@ class PanGraph:
                         sample = rank
                         contig = res
                     lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                    inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                    inf = {'sv_type':tags['INF'].split(self.SN_delim)[1],'raw':tags['INF']} if 'INF' in tags else {}
 
                     if not getSeq:
                         seq = None
@@ -1041,6 +1087,7 @@ class PanGraph:
         seqDesc = f"{node[NODE.seqDesc]}..." if node[NODE.len] > len(node[NODE.seqDesc]) and node[NODE.seqDesc] != '*' else node[NODE.seqDesc]
 
         title = f"NodeId: {nodeId}; Resource: {node[NODE.sample]}_{node[NODE.chr]}; Len: {node[NODE.len]}"
+        #print('check 1', 'chr', node[NODE.chr])
         if sample == self.backbone['name']: title += f"; Pos: {pos} - {pos + node[NODE.len] - 1}"
         if inf: title += f"; Info: {inf}"
         if showSeqDesc: title += f"; Seq: {seqDesc}"
@@ -1048,19 +1095,24 @@ class PanGraph:
         return {'color':color,'id':nodeId,'label':nodeId,'shape':shape,'size':size,'title':title,'shape_cy':shape_cy,'sample':sample,'sv_type':sv_type}
 
     def formatEdgeOutput(self, edge):
+
+        # hardcoded. to be fixed
+        self.nameCols['0'] = '#FFDEAD'
+        self.nameCols['1'] = '#FFDEAD'
+        self.nameCols['2'] = '#FFDEAD'
+
         sourceLabel = '*' if 'strands' in edge[2] and edge[2]['strands'][0] == '-' else ''
         targetLabel = '*' if 'strands' in edge[2] and edge[2]['strands'][1] == '-' else ''
 
         label = f'({sourceLabel},{targetLabel})' if sourceLabel or targetLabel else ''
+        lineColor = self.nameCols[edge[2]['tags']['SR']] if 'tags' in edge[2] and 'SR' in edge[2]['tags'] else ''
 
-        return {'from':edge[0],'to':edge[1],'arrows':'to','sourceLabel':sourceLabel,'targetLabel':targetLabel,'label':label,'color':'red','labelHighlightBold':'true'}
+        return {'from':edge[0],'to':edge[1],'arrows':'to','sourceLabel':sourceLabel,'targetLabel':targetLabel,'label':label,'color':'red','labelHighlightBold':'true','lineColor':lineColor}
 
     def genDrawGraphResult(self, graph, posDict):
         self.colorPalettes()
-
         nodes = [self.formatNodeOutput(nodeId, self.nodes[nodeId]) for nodeId in graph.nodes]
         edges = [self.formatEdgeOutput(edge) for edge in graph.edges(data=True)]
-
         inNodeIdList = [n for n,d in graph.in_degree() if d == 0]
         outNodeIdList = [n for n,d in graph.out_degree() if d == 0]
 
@@ -1110,9 +1162,10 @@ class PanGraph:
         for edge in edges:
             sourceLabel = edge['sourceLabel'] if 'sourceLabel' in edge else ''
             targetLabel = edge['targetLabel'] if 'targetLabel' in edge else ''
-            color = outputNodeInfo[edge['from']]['data']['color']
+            #color = outputNodeInfo[edge['from']]['data']['color']
+            color = edge['lineColor'] if 'lineColor' in edge else outputNodeInfo[edge['from']]['data']['color']
             # avoid too light color for edges
-            color = f'#{int(color[1:3],16)//2:02x}{int(color[3:5],16)//2:02x}{int(color[5:],16)//2:02x}' if color[0] == '#' else color
+            #color = f'#{int(color[1:3],16)//2:02x}{int(color[3:5],16)//2:02x}{int(color[5:],16)//2:02x}' if color[0] == '#' else color
 
             if sourceLabel or targetLabel:
                 color = 'red'
@@ -1121,7 +1174,7 @@ class PanGraph:
             ele = {'data':{'source':edge['from'],'target':edge['to'],'weight':1,'color':color,'arrow':arrow,'sourceLabel':sourceLabel,'targetLabel':targetLabel}}
             cyData.append(ele)
 
-        return cyData
+        return {'data':cyData, 'meta':{'nodeCount':len(nodes), 'edgeCount': len(edges)}}
 
     def genHtml(self, graph, posDict={}, outHtmlPrefix=None):
         genHtmlInfo = {'vis':{'template':os.path.join(os.path.dirname(os.path.realpath(__file__)),'template','htmlTemplate.html')}, \
@@ -1231,29 +1284,6 @@ class PanGraph:
         logging.info('loading GFA ...')
         self.loadRGFA(targetChr=targetChr, targetStart=targetStart, targetEnd=targetEnd, sampleList=sampleList)
 
-        """
-        logging.info(f'updating nodes ...')
-        firstNodeId = self.firstNodeId[list(self.firstNodeId.keys())[0]]
-        self.updateNodes()
-
-        logging.info('generating subgraph ...')
-        sampleList = list(self.inf['samples'].keys())
-        posDict = {targetChr:{'posFrom':targetStart,'posTo':targetEnd}}
-        self.genSubGraph(sampleList, posDict)
-
-        logging.info(f"number of nodes in subgraph: {len(self.subGraph.nodes)}")
-        logging.info(f"number of edges in subgraph: {len(self.subGraph.edges)}")
-
-        logging.info('running genDrawGraphResult() ...')
-        self.genDrawGraphResult(self.subGraph, posDict)
-
-        logging.info('running genHtml() ...')
-        self.genHtml(self.subGraph, posDict)
-        """
-
-    def test(self):
-        pass
-
     def binSearch(self, a, x):
         i = bisect_left(a, x)
         if i :
@@ -1295,6 +1325,11 @@ class PanGraph:
 
         return results
 
+    def test(self):
+        print('test')
+        self.parseRGFA()
+        print('test')
+
 if __name__=="__main__":
     parser = ArgumentParser(description='Generate graph html')
     parser.add_argument('-g', dest='gfa', help='the gfa file', type = str)
@@ -1321,9 +1356,12 @@ if __name__=="__main__":
             print(panGraph.drawGraphResult['outHtml'])
             print(panGraph.subNodesCount)
         elif args.action == 'test':
+            """
             nodeIdDict = {nodeId:1 for nodeId in args.nodeidlist}
             panGraph = PanGraph(args.gfa, args.outdir, nodeIdDict=nodeIdDict)
             panGraph.drawGraphByNodeId(sampleList=args.samplelist, targetChr=args.chr, nodeIdDict=nodeIdDict)
+            """
+            panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=True)
         else:
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=False)
             panGraph.drawGraph(args.samplelist, args.chr, args.start, args.end)

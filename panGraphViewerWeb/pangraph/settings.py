@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'pangraphviewer.apps.pangraphviewerConfig',
 
     'bootstrap4',
-    'fontawesome-free'
+    'fontawesomefree'
 ]
 
 MIDDLEWARE = [
@@ -167,5 +167,5 @@ TMPPATH_PREFIX = env.str('TMPPATH_PREFIX')
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-STATIC_ROOT = BASE_DIR + '/staticfiles'
+#STATIC_ROOT = BASE_DIR + '/staticfiles'
 #STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

@@ -1211,7 +1211,7 @@ class Main(QMainWindow):
 
         self.gfa1 = os.path.join(f"{self.outDir1}", f"{self.bb}_vcf2rGFA.gfa")
         self.run = PanGraph(f"{self.gfa1}", f"{self.outDir1}")
-        self.allChrs = self.run.backbone['contigs']
+        #self.allChrs = self.run.backbone['contigs']
         self.displayInfo()
         self.resetSample()
         self.ui.statusVCF.setStyleSheet('color: green')
@@ -1304,7 +1304,7 @@ class Main(QMainWindow):
         time_delta = (self.date_gfa2 - self.date_gfa1)
         total_seconds = time_delta.total_seconds()
         self.ui.status.setText('Finished in %.2fs ! ' % total_seconds)
-        self.allChrs = self.run.backbone['contigs']
+        #self.allChrs = self.run.backbone['contigs']
         self.ui.VCFtab.setEnabled(True)
         self.displayInfo()
         self.enableFrames()
@@ -1403,7 +1403,7 @@ class Main(QMainWindow):
             pass
 
         self.run = PanGraph(f"{self.gfa}", f"{self.outDir}")
-        self.allChrs = self.run.backbone['contigs']
+        #self.allChrs = self.run.backbone['contigs']
         self.displayInfo()
         self.resetSample()
         self.completeGFAparse()
@@ -1448,14 +1448,16 @@ class Main(QMainWindow):
         self.lines = list()
         try:
             self.lines = [i for i in self.run.nameCols.keys()]
-            self.backboneList = [self.run.backbone['name']]
+            #self.backboneList = [self.run.backbone['name']]
+            self.backboneList = list(self.run.backbone_info.keys())
             self.leftSamples = self.lines
             if '' not in self.backboneList:
                 self.backboneList.insert(0, '')
             self.ui.comboBoxSample.addItems(self.backboneList)
             if '' not in self.leftSamples:
                 self.leftSamples.insert(0, '')
-            self.ui.sampleComboBox.addItems([i for i in self.leftSamples if i != self.run.backbone['name']])
+            #self.ui.sampleComboBox.addItems([i for i in self.leftSamples if i != self.run.backbone['name']])
+            self.ui.sampleComboBox.addItems([i for i in self.leftSamples if i != list(self.run.backbone_info.keys())])
             self.ui.nodesComboBox.clear()
             self.nodes = [i for i in self.run.inf['NodeID']]
             if '' not in self.nodes:
@@ -1474,7 +1476,9 @@ class Main(QMainWindow):
         self.clearNodesList()
         self.chrs = list()
 
-        self.chrs = natsorted(self.allChrs)
+        #self.chrs = natsorted(self.allChrs)
+        self.run.backbone = self.run.backbone_info[self.backbone]
+        self.chrs = natsorted(self.run.backbone['contigs'])
         if '' not in self.chrs:
             self.chrs.insert(0, '')
         self.ui.comboBoxChr.addItems(self.chrs)
@@ -1529,7 +1533,7 @@ class Main(QMainWindow):
                     self.ui.plotStatusLabel.setStyleSheet('color: blue')
                     self.ui.plotStatusLabel.setText('Plotting ...')
                     self.date_plot1 = datetime.datetime.today()
-                    self.leftSamples = [i for i in self.leftSamples if i != '']
+                    self.leftSamples = [i for i in self.leftSamples if i != ''] + ['Samples']
                     self.workerShowGraph = Worker(self.run.drawGraphCmdline, self.leftSamples, self.chr, self.start, self.end)
                     self.threadpool.start(self.workerShowGraph)
                     self.workerShowGraph.signals.finished.connect(self.completePlot)

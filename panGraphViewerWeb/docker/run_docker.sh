@@ -12,7 +12,7 @@ then
   docker rm $container_id > /dev/null
 fi
 
-docker run -v ${data_path}:/usr/src/app/data -d -P --name pangraph1 pangraph > /dev/null
+docker run -p 8000:8000 -v ${data_path}:/usr/src/app/data -d -P --name pangraph1 pangraph > /dev/null
 
 port=$( docker port pangraph1 8000 | cut -d':' -f2 )
 echo "Port for web is $port"

@@ -91,6 +91,11 @@ class DrawGraphResult:
         panGraph.subNodesCount = obj['subNodesCount']
         panGraph.drawGraphResult = {'outHtml':obj['outHtml']}
 
+class FormatException(Exception):
+    def __init__(self, message="Format error occurred"):
+        super().__init__(message)
+        self.custom_data = "Optional additional data"
+
 class PanGraph:
     seqDescLen = 10
     SN_delim = getVar(copied, 'nodes', 'SN_delim', mustHave=True)
@@ -133,7 +138,7 @@ class PanGraph:
             logging.info("Parsing rGFA")
             self.inf = self.parseRGFA(nodeIdDict)
             self.neededGFA = self.inf['neededGFA']
-            self.backbone = self.inf['backbone']
+            self.backbone_info = self.inf['backbone']
             self.colorPalettes()
 
         self.bigNodeSeqLen = int(getVar(copied, 'nodes', 'maxNodeLenDisplay'))
@@ -165,7 +170,8 @@ class PanGraph:
     def parseRGFA(self, nodeIdDict):
         samples = {}
         neededGFA = False
-        backbone = {'name':None, 'contigs':{}}
+        #backbone = {'name':None, 'contigs':{}}
+        backbone = {}
         nodeIdDDlist = []
 
         rawNodeData = {}
@@ -201,15 +207,20 @@ class PanGraph:
                             sample = res.split(self.SN_delim)[0]
                             contig = self.SN_delim.join(res.split(self.SN_delim)[1:])
                         else:
-                            neededGFA = True
-                            sample = rank
-                            contig = res
+                            #neededGFA = True
+                            #sample = rank
+                            #contig = res
+                            raise FormatException()
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
                         samples[sample] = 1
                         if rank == '0':
-                            backbone['contigs'][contig] = 1
-                            backbone['name'] = sample
+                            #backbone['contigs'][contig] = 1
+                            #backbone['name'] = sample
+                            if sample not in backbone:
+                                backbone[sample] = {'name':'', 'contigs':{}}
+                            backbone[sample]['contigs'][contig] = 1
+                            backbone[sample]['name'] = sample
 
                         rawNodeData[nodeId] = [fileOffset, len(line), rank, contig, lenBefore, seqLen]
                     elif line[0] == 'L':
@@ -223,6 +234,8 @@ class PanGraph:
                         rawEdgeData.append(str)
 
                     fileOffset += len(line)
+            except FormatException as e:
+                neededGFA = 1
             except Exception as e:
                 logging.error(f'!!!!! Parsing aborted: invalid format at line: {lineNum}')
                 neededGFA = -1
@@ -236,7 +249,9 @@ class PanGraph:
                 else:
                     self.illegalrGFA == 0
 
-        backbone['contigs'] = list(backbone['contigs'].keys())
+        #backbone['contigs'] = list(backbone['contigs'].keys())
+        for bb in backbone:
+             backbone[bb]['contigs'] = list(backbone[bb]['contigs'].keys())
         #nodeIdDDlist = natsorted(nodeIdDDlist)
         if len(rawNodeData) > self.maxNodeCount:
             self.exceedNodeIdCount = True
@@ -339,7 +354,9 @@ class PanGraph:
                     sample = tags['SR'] if 'SR' in tags else ''
                     contig = res
                 lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                inf = {'sv_type':tags['INF'].split(self.SN_delim)[0],'raw':tags['INF']} if 'INF' in tags else {}
+                if inf and inf['sv_type'] == 'SV':
+                    inf['sv_type'] = tags['INF'].split(self.SN_delim)[1]
 
                 seq = None
                 self.nodes[nodeId] = [seqDesc, seqLastDesc, seqLen, seq, sample, contig, lenBefore, rank, inf, None, None]
@@ -424,12 +441,25 @@ class PanGraph:
                         #seqLastDesc = seq[-self.seqDescLen:]
                         rank = tags['SR'] if 'SR' in tags else ''
                         res = tags['SN'] if 'SN' in tags else ''
+
+                        """
                         if len(res.split(self.SN_delim)) == 2:
                             sample = res.split(self.SN_delim)[0]
                             contig = res.split(self.SN_delim)[1]
                         else:
                             sample = tags['SR'] if 'SR' in tags else ''
                             contig = res
+                        """
+                        if len(res.split(self.SN_delim)) >= 2:
+                            if 'SR' in tags:
+                                sample = res.split(self.SN_delim)[0] if tags['SR'] == '0' else 'Samples'
+                            else:
+                                sample = res.split(self.SN_delim)[0]
+                            contig = res.split(self.SN_delim)[1]
+                        else:
+                            sample = res.split(self.SN_delim)[0]
+                            contig = res
+
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
                         if rank != '0' and sampleList and sample not in sampleList:
@@ -536,14 +566,29 @@ class PanGraph:
                         seqLastDesc = seq[-self.seqDescLen:]
                         rank = tags['SR'] if 'SR' in tags else ''
                         res = tags['SN'] if 'SN' in tags else ''
+
+                        """
                         if len(res.split(self.SN_delim)) == 2:
                             sample = res.split(self.SN_delim)[0]
                             contig = res.split(self.SN_delim)[1]
                         else:
                             sample = tags['SR'] if 'SR' in tags else ''
                             contig = res
+                        """
+                        if len(res.split(self.SN_delim)) >= 2:
+                            if 'SR' in tags:
+                                sample = res.split(self.SN_delim)[0] if tags['SR'] == '0' else 'Samples'
+                            else:
+                                sample = res.split(self.SN_delim)[0]
+                            contig = res.split(self.SN_delim)[1]
+                        else:
+                            sample = res.split(self.SN_delim)[0]
+                            contig = res
+
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                        inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                        inf = {'sv_type':tags['INF'].split(self.SN_delim)[0],'raw':tags['INF']} if 'INF' in tags else {}
+                        if inf and inf['sv_type'] == 'SV':
+                            inf['sv_type'] = tags['INF'].split(self.SN_delim)[1]
 
                         seq = None
                         if nodeId in subNodes:
@@ -834,8 +879,8 @@ class PanGraph:
                 if nodeId not in plotNodes:
                     plotNodes.append(nodeId)
                     if len(node[NODE.inf]) != 0 and node[NODE.inf]['sv_type'] == 'DUP':
-                        sPos = int(node[NODE.inf]['raw'].split('_')[1])
-                        ePos = int(node[NODE.inf]['raw'].split('_')[2])
+                        sPos = int(node[NODE.inf]['raw'].split(self.SN_delim)[1])
+                        ePos = int(node[NODE.inf]['raw'].split(self.SN_delim)[2])
                         self.features.append(GraphicFeature(start=sPos, end=ePos, strand=0,
                                                 color=self.nameCols[node[NODE.sample]], label="This is node '%s'" % nodeId))
                     else:
@@ -888,14 +933,29 @@ class PanGraph:
                     seqLastDesc = seq[-self.seqDescLen:]
                     rank = tags['SR'] if 'SR' in tags else ''
                     res = tags['SN'] if 'SN' in tags else ''
+
+                    """
                     if len(res.split(self.SN_delim)) >= 2:
                         sample = res.split(self.SN_delim)[0]
                         contig = self.SN_delim.join(res.split(self.SN_delim)[1:])
                     else:
                         sample = rank
                         contig = res
+                    """
+                    if len(res.split(self.SN_delim)) >= 2:
+                        if 'SR' in tags:
+                            sample = res.split(self.SN_delim)[0] if tags['SR'] == '0' else 'Samples'
+                        else:
+                            sample = res.split(self.SN_delim)[0]
+                        contig = res.split(self.SN_delim)[1]
+                    else:
+                        sample = res.split(self.SN_delim)[0]
+                        contig = res
+
                     lenBefore = int(tags['SO']) if 'SO' in tags else 0
-                    inf = {'sv_type':tags['INF'].split('_')[0],'raw':tags['INF']} if 'INF' in tags else {}
+                    inf = {'sv_type':tags['INF'].split(self.SN_delim)[0],'raw':tags['INF']} if 'INF' in tags else {}
+                    if inf and inf['sv_type'] == 'SV':
+                        inf['sv_type'] = tags['INF'].split(self.SN_delim)[1]
 
                     if not getSeq:
                         seq = None
@@ -1324,6 +1384,8 @@ if __name__=="__main__":
             nodeIdDict = {nodeId:1 for nodeId in args.nodeidlist}
             panGraph = PanGraph(args.gfa, args.outdir, nodeIdDict=nodeIdDict)
             panGraph.drawGraphByNodeId(sampleList=args.samplelist, targetChr=args.chr, nodeIdDict=nodeIdDict)
+        elif args.action == 'parseRGFA':
+            panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=True)
         else:
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=False)
             panGraph.drawGraph(args.samplelist, args.chr, args.start, args.end)

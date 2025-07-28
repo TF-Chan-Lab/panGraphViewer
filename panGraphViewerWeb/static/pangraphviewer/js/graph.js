@@ -11,6 +11,7 @@ const parse_bed_url = document.getElementById('parse_bed_url').value
 const getdata_url = document.getElementById('getdata_url').value
 var sample_list = '';
 var gene_info;
+var backbone_info;
 
 function gen_graph(chr, start, end, tabHeader, by_node_id=false) {
     var url = getdata_url;
@@ -67,10 +68,16 @@ function gen_graph(chr, start, end, tabHeader, by_node_id=false) {
             }
             update_alert_box('Generation done', 'alert-success')
 
-            cyData = result.cyData;
+            cyData = result.cyData.data;
+            cyMeta = result.cyData.meta;
+
             legend = result.legend;
-            result_gfa = result.gfa
-            addOutputTab(title, cyData, result_gfa, legend, tabHeader);
+            result_gfa = result.gfa;
+
+            if (confirm('Number of nodes is ' + cyMeta.nodeCount + '. Proceed?'))
+               addOutputTab(title, cyData, result_gfa, legend, tabHeader);
+            else
+               alert('Drawing graph cancelled');
         },
         error: function(result) {
             obj = result.responseJSON;
@@ -109,9 +116,9 @@ $('#parse-btn').click(function() {
         url: parse_gfa_url,
         data: post_data,
         success: function(result) {
-            sample_list = result.backbone;
-
+            //sample_list = result.backbone;
             backbone_obj = $('#backbone').find('option:not(:first)').remove();
+
             chr_obj = $('#chr').find('option:not(:first)').remove();
             $('#start').val('');
             $('#end').val('');
@@ -129,14 +136,18 @@ $('#parse-btn').click(function() {
             }
 
             // update backbone dropdown
-            $.each(result.backbone, function(index, value) {
+            backbone_info = result.backbone_info;
+            $.each(Object.keys(backbone_info), function(index, value) {
                 backbone_obj.end().append('<option value="'+value+'">'+value+'</option>');
             });
 
             // update chr dropdown
+            // working
+            /*
             $.each(result.chr, function(index, value) {
                 chr_obj.end().append('<option value="'+value+'">'+value+'</option>');
             });
+            */
 
             // enable tabs
             $("#tab-action a").removeClass('disabled')
@@ -144,6 +155,11 @@ $('#parse-btn').click(function() {
             // enable inputs in tab-content
             $("#tab-content-action :input").prop('disabled', false)
             $("#bed_path").trigger('change');
+
+            // working
+            $('#chr').prop('disabled', true);
+            $('#start').prop('disabled', true);
+            $('#end').prop('disabled', true);
 
             // disable specific controls
             btn = ['extract_node_view_btn',
@@ -226,7 +242,7 @@ $('#parse-vcf-btn').click(function() {
         url: parse_vcf_url,
         data: post_data,
         success: function(result) {
-            sample_list = result.backbone;
+            //sample_list = result.backbone;
 
             backbone_obj = $('#backbone').find('option:not(:first)').remove();
             chr_obj = $('#chr').find('option:not(:first)').remove();
@@ -361,6 +377,23 @@ function gene_onchange() {
     }
 }
 
+function backbone_onchange() {
+    $('#chr').find('option:not(:first)').remove();
+    $.each(backbone_info[$('#backbone').val()].contigs, function(index, value) {
+        chr_obj.end().append('<option value="'+value+'">'+value+'</option>');
+    });
+    $("#chr").prop('disabled', false);
+    $('#start').val('');
+    $('#end').val('');
+}
+
+function chr_onchange() {
+    $('#start').val('');
+    $("#start").prop('disabled', false);
+    $('#end').val('');
+    $("#end").prop('disabled', false);
+}
+
 function download_sequence(ids, gfa_path) {
     var form = $('<form></form>').attr('action', 'downloadseq').attr('method', 'post');
     form.append($("<input></input>").attr('type', 'hidden').attr('name', 'csrfmiddlewaretoken').attr('value', csrf[0].value));
@@ -399,7 +432,8 @@ function drawGraph2(loadStatusId, cyId, cyData) {
 
         layout: {
             //name: 'euler',
-            name: 'fcose',
+            //name: 'fcose',
+            name: 'dagre', rankDir: 'LR',
             randomize: true,
             animate: false,
 

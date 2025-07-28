@@ -121,7 +121,7 @@ def getdata(request):
     status = 400 if drawGraphResult['error'] else 200
 
     cyData = graph.genCyDataFromDrawGraphResult(drawGraphResult)
-    colors = {node['sample']:node['color'] for node in drawGraphResult['nodes_data'] if 'sample' in node}
+    colors = {node['sample']:node['color'] for node in drawGraphResult['nodes_data'] if 'sample' in node and ',' not in node['sample']}
     shapes = {node['sv_type']:node['shape_cy'] for node in drawGraphResult['nodes_data'] if 'sv_type' in node and node['sv_type']}
     hasReversed = True if [node for node in drawGraphResult['nodes_data'] if node['id'][-1] == '*'] else False
     legend = {'colors':colors, 'shapes':shapes, 'has_reversed': hasReversed}
@@ -146,8 +146,9 @@ def parse_gfa(request):
 
     results = {}
     results['status'] = 0
-    results['backbone'] = [graph.backbone['name']]
-    results['chr'] = graph.backbone['contigs']
+    results['backbone_info'] = graph.backbone
+    #results['backbone'] = list(graph.backbone.keys())
+    results['chr'] =  []
     results['gfa'] = gfa
     results['time'] = time.time() - start_time
     results['warning'] = warning
@@ -323,6 +324,8 @@ def getnodes(request):
         title = f"NodeId: {nodeId}; Resource: {node[NODE.sample]}_{node[NODE.chr]}; Len: {node[NODE.len]}"
         if node[NODE.rank] == '0':
             title += f"; Pos: {node[NODE.lenBefore]} - {node[NODE.lenBefore]+node[NODE.len]-1}"
+        else:
+            title += f"; SV-Info: {node[NODE.inf]['raw']}"
         results.append({'seqname':nodeId, 'title':title, 'seq':node[NODE.seq]})
 
     return results

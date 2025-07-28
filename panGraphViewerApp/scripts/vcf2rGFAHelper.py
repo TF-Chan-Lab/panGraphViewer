@@ -14,6 +14,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 class VCF2rGFAHelper:
+    #def __init__(self, outDir, fasta=None, vcf=None):
     def __init__(self, fasta, vcf, outDir):
         try:
             import pysam
@@ -53,17 +54,22 @@ class VCF2rGFAHelper:
             pass
 
         self.fasta = fasta
-        #self.fasta_fai = f'{self.outDir}/{os.path.basename(self.fasta)}.fai'
-        self.fasta_fai = f'{self.fasta}.fai'
         self.vcf = vcf
-        self.vcf_sorted = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}_sorted')
-        self.vcf_gz = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}.gz')
-        self.vcf_gz_tbi = os.path.join(self.outDir, f'{self.vcf_gz}.tbi')
+
+        if self.fasta:
+            self.fasta_fai = f'{self.fasta}.fai'
+
+        if self.vcf:
+            self.vcf_sorted = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}_sorted')
+            self.vcf_gz = os.path.join(self.outDir, f'{os.path.basename(self.vcf)}.gz')
+            self.vcf_gz_tbi = os.path.join(self.outDir, f'{self.vcf_gz}.tbi')
+
+            if not self.usePysam:
+                cmd = f'"{self.bcftools}" view "{self.vcf}" -h | grep ^#CHROM'
+                self.vcfHeader = ['CHROM']+self.runCmdLine(shlex.split(cmd))[-1].split('\t')[1:]
+
         self.tempFiles = []
 
-        if not self.usePysam:
-            cmd = f'"{self.bcftools}" view "{self.vcf}" -h | grep ^#CHROM'
-            self.vcfHeader = ['CHROM']+self.runCmdLine(shlex.split(cmd))[-1].split('\t')[1:]
 
     def preprocess(self, force=False):
         if self.fasta:
@@ -87,7 +93,7 @@ class VCF2rGFAHelper:
 
                 if line.startswith('#CHROM'):
                     fields = line.strip().split('\t')
-                    vcfSamples = fields[8:]
+                    vcfSamples = fields[9:]
                     break
 
         return vcfSamples
@@ -117,10 +123,12 @@ class VCF2rGFAHelper:
         elif action == 'indexVCF':
             pysam.tabix_index(self.vcf_gz, preset='vcf', force=True)
         elif action == 'fetchFasta':
-            chr, start, end, env = param['chr'], param['start'], param['end'], param['env']
+            chr, start, end, env, ref = param['chr'], param['start'], param['end'], param['env'], param['ref']
 
-            if 'pysam' not in env: env['pysam'] = pysam.FastaFile(self.fasta)
-            output = env['pysam'].fetch(chr, start-1, end-1)
+            #if 'pysam' not in env: env['pysam'] = pysam.FastaFile(self.fasta)
+            #output = env['pysam'].fetch(chr, start-1, end-1)
+            ref = pysam.FastaFile(ref if ref else self.fasta)
+            output = ref.fetch(chr, start-1, end-1)
         elif action == 'fetchVCF':
             chr, start, end = param['chr'], param['start'], param['end']
 
@@ -150,10 +158,12 @@ class VCF2rGFAHelper:
             cmd = f'"{bcftools}" index -t "{self.vcf_gz}"'
             output = self.runCmdLine(shlex.split(cmd))
         elif action == 'fetchFasta':
-            chr, start, end, env = param['chr'], param['start'], param['end'], param['env']
+            chr, start, end, env, ref = param['chr'], param['start'], param['end'], param['env'], param['ref']
 
-            if not 'Fasta' in param: param['Fasta'] = Fasta(self.fasta)
-            output = param['Fasta'][chr][start-1:end-1]
+            #if not 'Fasta' in param: param['Fasta'] = Fasta(self.fasta)
+            #output = param['Fasta'][chr][start-1:end-1]
+            ref = Fasta(self.fasta)
+            ouptut = ref[chr][start-1:end-1]
             output = str(output)
         elif action == 'fetchVCF':
             chr, start, end = param['chr'], param['start'], param['end']
@@ -212,8 +222,8 @@ class VCF2rGFAHelper:
         return self.func(param)
 
     # 1-based, exclusive
-    def fetchFasta(self, chr, start, end, env):
-        param = {'action':'fetchFasta','chr':chr,'start':start,'end':end,'env':env}
+    def fetchFasta(self, chr, start, end, env, ref):
+        param = {'action':'fetchFasta','chr':chr,'start':start,'end':end,'env':env,'ref':ref}
 
         return self.func(param)
 
@@ -224,7 +234,7 @@ class VCF2rGFAHelper:
         return self.func(param)
 
     # 1-based, exclusive
-    def getRef(self, chr, start_orig, end, env):
+    def getRef(self, chr, start_orig, end, env={}, ref=None):
         if end < 1 or end < start_orig:
             return ''
 
@@ -234,7 +244,7 @@ class VCF2rGFAHelper:
         if not self.fasta:
             return f'{padding}{"N"*(end-start)}'
         else:
-            return f'{padding}{self.fetchFasta(chr, start, end, env).upper()}'
+            return f'{padding}{self.fetchFasta(chr, start, end, env, ref).upper()}'
 
     def getVcfChroms(self):
         if sys.platform == "win32":

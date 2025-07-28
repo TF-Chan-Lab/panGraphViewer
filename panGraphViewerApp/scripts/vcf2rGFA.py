@@ -152,7 +152,8 @@ class VCF2rGFA:
                     node = nodes[nodeID]
                     node['INF'] = self.updateNodeID(nodeIDMap, node['INF'])
                     if 'DEL_SAMPLE' in node and node['DEL_SAMPLE']:
-                       node['INF'] = f"INF:Z:DEL_{'_'.join(sorted(node['DEL_SAMPLE']))}"
+                       node['INF'] = f"INF:Z:SV||DEL||{'||'.join(sorted(node['DEL_SAMPLE']))}"
+                       print('check 3', node['INF'])
                     output = ['S',nodeID2,node['seq'],node['LN'],node['SN'],node['SO'],node['SR'],node['INF']]
                     fd.write('%s\n' % "\t".join(output))
 
@@ -216,8 +217,8 @@ class VCF2rGFA:
 
             # varStart, varEnd: exclusive
             # e.g. if pos = 8, varStart = 7 (before the start of var)
+            varId = rec.id
             varStart = rec.pos - 1
-
             if 'SVTYPE' in rec.info:
                 varType = rec.info['SVTYPE']
 
@@ -235,10 +236,10 @@ class VCF2rGFA:
                     varSeq = self.vcf2rGFAHelper.getRef(chr, varStart+1, varEnd, env)
 
                     # assume the SV is inserted at the end of the duplicated region
-                    varStart = varStart + varLen
+                    #varStart = varStart + varLen
                 elif varType in ['DEL']:
                     refSeq = self.vcf2rGFAHelper.getRef(chr, varStart+1, varEnd, env)
-                    varSeq = ''
+                    varSeq = refSeq
                 elif varType in ['INV']:
                     refSeq = self.vcf2rGFAHelper.getRef(chr, varStart+1, varEnd, env)
                     varSeq = self.rev_comp(refSeq)
@@ -283,7 +284,7 @@ class VCF2rGFA:
                         logging.warning(f"Invalid format for BND: {rec.alts[0]}. Variant ignored")
                         continue
                 else:
-                    logging.warning(f"Invalid SVTYPE: {varType}")
+                    logging.warning(f"SVTYPE ignored: {varType}")
                     continue
             else:
                 ref = rec.ref
@@ -300,12 +301,27 @@ class VCF2rGFA:
                 else:
                     refSeq = rec.ref
 
+            """
             for sampleName in rec.samples:
                 sample = rec.samples[sampleName]
                 #if sample.allele_indices != (0,0) and sample.allele_indices != (None, None):
                 if any(sample.allele_indices):
                     if varSeq is None:
                         varSeq = rec.alts[max(sample.allele_indices)-1]
+            """
+
+            sampleList = []
+            for sampleName in rec.samples:
+                if any(rec.samples[sampleName].allele_indices):
+                    sampleList.append(sampleName)
+
+            if True:
+                if sampleList:
+                    #sampleName = sampleList[0]
+                    sampleName = '~'.join(sampleList)
+
+                    if varSeq is None:
+                        varSeq = rec.alts[0]
 
                     if posShift1:
                         varSeq = varSeq[1:]
@@ -314,23 +330,25 @@ class VCF2rGFA:
                         varEnd = varStart + len(refSeq) + 1
 
                     if varType != 'BND' and ((varStart and varStart+1 > chrLen) or (varEnd and varEnd-1 > chrLen)):
-                        tempStart  = varStart + 1 - varLen if varType == 'DUP' else varStart + 1
+                        tempStart  = varStart + 1 - varLen if varType == 'DUP_old' else varStart + 1
                         tempEnd = varEnd - 1
                         logging.warning(f"{varType} ({tempStart}-{tempEnd}) for {sampleName} is outside the range of the chr. Variant is ignored")
                         continue
 
-                    if varType == 'DUP':
-                        varDesc = f'{varType}_{varStart+1-len(varSeq)}_{varStart}'
+                    if varType == 'DUP_old':
+                        varDesc = f'SV||{varType}||{varStart+1-len(varSeq)}||{varStart}'
 
                         # split duplicated backbone node
                         if varStart-len(varSeq) not in posDict: posDict[varStart-len(varSeq)] = {}
                         posDict[varStart-len(varSeq)]['end'] = 1
                     elif varType == 'INS':
-                        varDesc = f'{varType}_{varStart+1}'
+                        #varDesc = f'SV||{varType}||{varStart+1}'
+                        varDesc = f'SV||{varType}||{chr}||{varStart+1}||{chr}||{varEnd}||{varId}||{sampleName}'
                     elif varType == 'BND':
-                        varDesc = f"{varType}_{rec.alts[0].replace(':','_')}"
+                        varDesc = f"SV||{varType}||{rec.alts[0].replace(':','||')}"
                     else:
-                        varDesc = f'{varType}_{varStart+1}_{varEnd-1}'
+                        #varDesc = f'SV||{varType}||{varStart+1}||{varEnd-1}'
+                        varDesc = f'SV||{varType}||{chr}||{varStart+1}||{chr}||{varEnd}||{varId}||{sampleName}'
 
                     if sampleName not in svList: svList[sampleName] = {}
                     if varStart not in svList[sampleName]: svList[sampleName][varStart] = []
@@ -452,7 +470,7 @@ class VCF2rGFA:
                     isReverse = sv['isReverse']
 
                     sv['edges'] = []
-                    if svType == 'DEL':
+                    if svType == 'DEL_old':
                         sv['edges'].append((posDict[pos1]['end'], posDict[pos2]['start'], '+', '+'))
                         #nodes[pos2NodeID[pos1+1]][5].append(sampleName)
                         if 'DEL_SAMPLE' not in nodes[pos2NodeID[pos1+1]]:
@@ -461,11 +479,19 @@ class VCF2rGFA:
                     else:
                         nodeID = self.getNodeID(chr=chr, nodeType=sv['sampleName'])
                         # sample node
-                        SR_val = sampleNames.index(sampleName) + 1
-                        nodes[nodeID] = {'seq':seq,'LN':f'LN:i:{len(seq)}','SN':f'SN:Z:{sampleName}{self.SN_delim}{chr}','SO':f'SO:i:{len(seq)}','SR':f'SR:i:{SR_val}','INF':''}
+
+                        #SR_val = sampleNames.index(sampleName) + 1
+                        SR_val = 1
+
+                        size = len(seq)
+                        #size = 123
+
+                        #nodes[nodeID] = {'seq':seq,'LN':f'LN:i:{len(seq)}','SN':f'SN:Z:{sampleName}{self.SN_delim}{chr}','SO':f'SO:i:{len(seq)}','SR':f'SR:i:{SR_val}','INF':''}
+                        nodes[nodeID] = {'seq':seq,'LN':f'LN:i:{size}','SN':f'SN:Z:{backbone}{self.SN_delim}{chr}','SO':f'SO:i:{pos1}','SR':f'SR:i:{SR_val}','INF':''}
+
                         if svType != 'INS':
                             # add ref nodeID info
-                            if svType == 'DUP':
+                            if svType == 'DUP_old':
                                 startRefNodeID = pos2NodeID[pos1+1-len(seq)]
                                 endRefNodeID = pos2NodeID[pos1]
                                 nodes[nodeID]['INF'] = f'INF:Z:{varDesc}_REF_{startRefNodeID}_{endRefNodeID}'
@@ -474,7 +500,8 @@ class VCF2rGFA:
                             else:
                                 startRefNodeID = pos2NodeID[pos1+1]
                                 endRefNodeID = pos2NodeID[pos2-1]
-                                nodes[nodeID]['INF'] = f'INF:Z:{varDesc}_REF_{startRefNodeID}_{endRefNodeID}'
+                                #nodes[nodeID]['INF'] = f'INF:Z:{varDesc}_REF_{startRefNodeID}_{endRefNodeID}'
+                                nodes[nodeID]['INF'] = f'INF:Z:{varDesc}'
                         else:
                             nodes[nodeID]['INF'] = f'INF:Z:{varDesc}'
 
