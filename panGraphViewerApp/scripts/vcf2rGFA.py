@@ -79,16 +79,22 @@ class VCF2rGFA:
         missChroms = sorted(list(set(self.vcfChroms) - set(self.refChroms)))
         if missChroms:
             if self.fasta:
-                logging.error(f"Some chromosomes in VCF are missing in REF: {', '.join(missChroms)}")
-                sys.exit(2)
+                logging.error(f"Some chromosomes in VCF are missing in REF and are ignored: {', '.join(missChroms)}")
+                #sys.exit(2)
             else:
                 logging.error(f"Please provide fasta reference as some contig info are missing in VCF headers: {', '.join(missChroms)}")
                 sys.exit(3)
 
-        commChroms = sorted(list(set(self.refChroms).intersection(self.vcfChroms)))
-        logging.info(f"Chromosomes in VCF to be converted: {', '.join(commChroms)}")
+        #commChroms = sorted(list(set(self.refChroms).intersection(self.vcfChroms)))
+        temp = set(self.refChroms).intersection(self.vcfChroms)
+        if options.chr:
+            temp = temp.intersection(options.chr)
+        self.chroms = sorted(list(temp))
 
-        self.chroms = options.chr if options.chr else self.vcfChroms
+        #logging.info(f"Chromosomes in VCF to be converted: {', '.join(commChroms)}")
+        logging.info(f"Chromosomes in VCF to be converted: {', '.join(self.chroms)}")
+        #self.chroms = options.chr if options.chr else self.vcfChroms
+
         self.SN_delim = get_var(copied, 'nodes','SN_delim', must_have=True)
 
     def getNodeID(self, chr, nodeType):
@@ -207,6 +213,7 @@ class VCF2rGFA:
 
         # svList[sampleName][varStart] = variants
         svList = {}
+        svTypeIgnored = {}
 
         # anchors in backbone for sample nodes
         # (e.g. posDict[8]['end'] mean anchor ends at 8, posDict[9]['start'] means anchor atarts at 9)
@@ -284,7 +291,9 @@ class VCF2rGFA:
                         logging.warning(f"Invalid format for BND: {rec.alts[0]}. Variant ignored")
                         continue
                 else:
-                    logging.warning(f"SVTYPE ignored: {varType}")
+                    if varType not in svTypeIgnored:
+                        svTypeIgnored[varType] = 1
+                        logging.warning(f"SVTYPE ignored: {varType}")
                     continue
             else:
                 ref = rec.ref
@@ -568,7 +577,7 @@ if __name__=="__main__":
     parser.add_argument('-p', dest='prefix', help='output filename prefix', type = str)
     parser.add_argument('-f', dest='fasta', help='a fasta format file that from the backbone sample', type = str)
     parser.add_argument('-c', dest='chr', nargs='*', help='the name of the chromosome(s) [default: all chroms]', type=str)
-    parser.add_argument('-n', dest='nthread', help='number of threads [default: 4]', type=int, default = 4)
+    parser.add_argument('-n', dest='nthread', help='number of threads [default: 10]', type=int, default = 10)
 
     args = parser.parse_args()
 
