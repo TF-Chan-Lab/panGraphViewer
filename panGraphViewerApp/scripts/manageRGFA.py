@@ -9,7 +9,9 @@ import csv
 import networkx as nx
 
 from argparse import ArgumentParser
+from functools import partial
 from natsort import natsorted, ns
+import argparse
 
 from configparser import ConfigParser
 
@@ -73,9 +75,8 @@ class ManageRGFA:
         except:
             pass
 
-        self.refChroms = {}
-
         self.sample_list = []
+        self.target_region = {}
 
     def _check_gfa(self, gfa_file):
         logging.info(f'Checking rGFA {gfa_file}')
@@ -99,7 +100,7 @@ class ManageRGFA:
 
         return {'ref_list':[], 'vcf_list':[], 'gene_list':[]}
 
-    def _load_gfa(self, gfa_file, id_offset=0):
+    def _load_rgfa(self, gfa_file, id_offset=0):
         logging.info(f'Loading rGFA file {gfa_file}')
 
         if self.node_id_max['node']:
@@ -218,13 +219,6 @@ class ManageRGFA:
                         edges[fromNodeChr] = {}
                         edges[fromNodeChr][(fromNodeId, toNodeId)] = edge_info
 
-        # backbone_node_list (any need?)
-        #self.backbone_nodes = {nodes[id]['SO']:nodes[id]['nodeId'] for id in nodes if nodes[id]['SR'] == self.backbone_SR}
-
-        #self.results = {}
-        #for bb_chr in nodes.keys():
-        #    self.results[bb_chr] = {'bb_chr':bb_chr,'nodes':nodes[bb_chr],'edges':edges[bb_chr]}
-
         for bb_chr in nodes.keys():
             for node_id in nodes[bb_chr]['all']:
                 node_type = nodes[bb_chr]['all'][node_id]['nodeType']
@@ -239,18 +233,9 @@ class ManageRGFA:
             for edge in edges[bb_chr]:
                 self.G[bb_chr].add_edge(edge[0], edge[1])
 
-        """
-        # create network
-        self.G[bb_chr] = nx.MultiDiGraph()
-        for node_id in nodes[bb_chr]['all']:
-            self.G[bb_chr].add_node(node_id, **nodes[bb_chr]['all'][node_id])
-        for edge in edges[bb_chr]:
-            self.G[bb_chr].add_edge(edge[0], edge[1])
-        """
-
         self.sample_list = natsorted(sample_dict.keys())
 
-    def _save_gfa(self, gfa=None):
+    def _save_rgfa(self, gfa=None):
         gfa = os.path.join(self.outDir, gfa if gfa else f'{self.prefix}.gfa')
 
         logging.info(f'Generating rGFA file {gfa}')
@@ -274,17 +259,10 @@ class ManageRGFA:
                     node = nodes['all'][nodeId]
 
                     if node['nodeType'] == 'REF':
-                        #ref = self.refChroms[bb]['fasta']
-                        #if not node['seq']:
-                        #    node['seq'] = self.get_seq(node['nodeType'],chr,node['start'],node['end'],env={},nodeId=nodeId,ref=ref)
                         output = ['S',node['nodeId2'],node['seq'],f"LN:i:{node['LN']}",f"SN:Z:{node['SN']}",f"SO:i:{node['SO']}",f"SR:i:{node['SR']}"]
                     elif node['nodeType'] == 'SV':
-                        #ref = self.refChroms[bb]['fasta']
-                        #if not node['seq']:
-                        #    node['seq'] = self.get_seq(node['nodeType'],chr,node['start'],node['end'],env={},nodeId=nodeId,ref=ref) if not node['seq'] else node['seq']
                         output = ['S',node['nodeId2'],node['seq'],f"LN:i:{node['LN']}",f"SN:Z:{node['SN']}",f"SO:i:{node['SO']}",f"SR:i:{node['SR']}",f"INF:Z:{node['INF']}"]
                     elif node['nodeType'] == 'GENE':
-                        #output = ['S', node['nodeId2'],'',f"LN:i:{node['LN']}",f"SN:Z:{node['SN']}",f"SO:i:{node['SO']}",f"SR:i:{node['SR']}",f"INF:Z:ANNOT{self.field_delim}GENE{self.field_delim}{node['size']}"]
                         output = ['S', node['nodeId2'],'',f"LN:i:{node['LN']}",f"SN:Z:{node['SN']}",f"SO:i:{node['SO']}",f"SR:i:{node['SR']}",f"INF:Z:ANNOT{self.field_delim}GENE{self.field_delim}{node['end']}"]
 
                     fd.write('%s\n' % "\t".join([str(x) for x in output]))
@@ -305,42 +283,58 @@ class ManageRGFA:
 
         os.chmod(gfa, 0o666)
 
-    def _filter_sv(self, bb_chr):
-        # need to check if self.nodes[bb_chr]['GENE'] is empty
-
-        sv_filtered = {bb_chr:[]}
+    def _extract_sv(self, bb_chr, overlap_gene=True, target_region=None):
+        sv_filtered = {}
         node_all = self.nodes[bb_chr]['all']
         node_gene = self.nodes[bb_chr]['GENE']
         sv_info = self.nodes[bb_chr]['SV']
-        bed_info = {node_all[node_id]['start']:node_all[node_id]['end'] for node_id in node_gene}
-        bed_start_sorted = sorted(bed_info.keys())
+        bb, chr = bb_chr.split(self.field_delim)
+
+        filters = []
+        if overlap_gene:
+            if bb_chr not in node_gene:
+                return {}
+            filter_info = {node_all[node_id]['start']:node_all[node_id]['end'] for node_id in node_gene}
+            filter_start_sorted = sorted(filter_info.keys())
+            filters.append({'filter_info':filter_info, 'filter_start_sorted':filter_start_sorted})
+        if target_region:
+            if chr not in target_region:
+                return {}
+            filter_info = {entry['start']:entry['end'] for entry in target_region[chr]}
+            filter_start_sorted = sorted(filter_info.keys())
+            filters.append({'filter_info':filter_info, 'filter_start_sorted':filter_start_sorted})
+
         for node_id in sv_info:
             sv_start = node_all[node_id]['start']
             sv_end = node_all[node_id]['end']
-            sv_start_idx = bisect_left(bed_start_sorted, sv_start)
-            sv_end_idx = bisect_left(bed_start_sorted, sv_end)
 
-            if sv_start_idx != sv_end_idx:
-                sv_filtered[bb_chr].append(node_id)
-            else:
-                if sv_start_idx >= len(bed_start_sorted):
+            found = 1
+            for filter in filters:
+                filter_start_sorted = filter['filter_start_sorted']
+                filter_info = filter['filter_info']
+                sv_start_idx = bisect_left(filter_start_sorted, sv_start)
+                if sv_start_idx > 0 and sv_start_idx >= len(filter_start_sorted):
                     sv_start_idx -= 1
-                bed_start = bed_start_sorted[sv_start_idx]
-                bed_end = bed_info[bed_start]
-                if sv_start <= bed_end and sv_end >= bed_start:
-                    sv_filtered[bb_chr].append(node_id)
+                filter_start = filter_start_sorted[sv_start_idx]
+                filter_end = filter_info[filter_start]
+                if not sv_start <= filter_end and sv_end >= filter_start:
+                    found = 0
+                    break
+
+            if found:
+                sv_filtered[node_id] = 1
 
         return sv_filtered
 
-    def _save_vcf(self, bb, nodes=None, vcf=None, overlap_gene_only=False):
+    def _save_vcf(self, bb, nodes=None, vcf=None, overlap_gene=True,target_region=None):
         vcf = os.path.join(self.outDir, vcf if vcf else f'{self.prefix}.vcf')
 
         logging.info(f"Generating vcf file {vcf}")
-        if overlap_gene_only:
+        if overlap_gene:
             if not [bb_chr for bb_chr in self.nodes if self.nodes[bb_chr]['GENE']]:
                 logging.warning(f'Annotation is not found. SV are not filtered by Genes')
             else:
-                logging.info(f'SV are filtered by genes [-overlap_gene_only 1]')
+                logging.info(f'SV are filtered by genes [-overlap_gene 1]')
         else:
             logging.info(f'SV are NOT filtered by genes')
 
@@ -354,10 +348,7 @@ class ManageRGFA:
                 nodes = {}
                 for bb_chr in self.nodes:
                     if bb_chr.startswith(bb):
-                        if overlap_gene_only and self.nodes[bb_chr]['GENE']:
-                            nodes[bb_chr] = self._filter_sv(bb_chr)[bb_chr]
-                        else:
-                            nodes[bb_chr] = self.nodes[bb_chr]['SV']
+                        nodes[bb_chr] = self._extract_sv(bb_chr, overlap_gene, target_region)
 
             count = 0
             for bb_chr in nodes:
@@ -435,12 +426,6 @@ class ManageRGFA:
 
         os.chmod(bed, 0o666)
 
-    def get_nodes(self, bb_chr=None):
-        return self.nodes
-
-    def get_edges(self, bb_chr=None):
-        return self.edges
-
     def _get_node_id(self, node_type='node'):
         assert node_type in self.node_id_max
 
@@ -510,115 +495,95 @@ class ManageRGFA:
             del self.G[bb_chr]
             del self.nodes[bb_chr]
 
-    def test(self):
-        self._load_gfa('by_release_fix_test/W05_vcf2rGFA.gfa')
-        self._load_gfa('by_release_fix_test/ZH13_vcf2rGFA.gfa')
-        self._load_gfa('by_release_fix_test/Wm82_vcf2rGFA.gfa')
+    def _load_region_bed(self, region_bed_file):
+        logging.info(f"Loading region bed {region_bed_file}")
 
-        self._add_annot('gff/Gsoja.W05.gene.gff','W05')
-        self._add_annot('gff/Gmax_ZH13v2.ChrRenamed_modified.gff','ZH13')
-        self._add_annot('gff/Gmax_508_Wm82.a4.v1.gene_exons.gff3','Wm82')
+        target_region = {}
+        if True:
+        #try:
+            with open(region_bed_file) as f:
+                for line in f:
+                    if not line.strip() or line[0] == '#':
+                        continue
+                    fields = line.strip().split()
+                    if len(fields) < 3:
+                        continue
+                    if fields[0] not in target_region:
+                        target_region[fields[0]] = []
+                    target_region[fields[0]].append({'start':int(fields[1]), 'end':int(fields[2])})
+        #except:
+        #     logging.error(f'Error in loading region bed {region_bed_file}')
 
-        self._save_gfa('merged_W05_ZH13_Wm82.gfa')
+        self.target_region = target_region
 
-        self._save_bed(bb='W05', bed='W05_working_save_annot.bed')
-        self._save_bed(bb='ZH13', bed='ZH13_working_save_annot.bed')
-        self._save_bed(bb='Wm82', bed='Wm82_working_save_annot.bed')
-
-        self._save_vcf(bb='W05', vcf='W05_working_save_vcf.vcf')
-        self._save_vcf(bb='ZH13', vcf='ZH13_working_save_vcf.vcf')
-        self._save_vcf(bb='Wm82', vcf='Wm82_working_save_vcf.vcf')
-
-        self._save_vcf(bb='W05', vcf='W05_working_save_vcf_filtered.vcf', overlap_gene_only=True)
-        self._save_vcf(bb='ZH13', vcf='ZH13_working_save_vcf_filtered.vcf', overlap_gene_only=True)
-        self._save_vcf(bb='Wm82', vcf='Wm82_working_save_vcf_filtered.vcf', overlap_gene_only=True)
-
-    # need to pass through check_param() first
     def run(self):
         logging.info(f'Action: {self.options.action}')
         if self.options.action == 'merge_gfa':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
-            self._save_gfa(self.options.out_gfa)
+                self._load_rgfa(gfa)
+            self._save_rgfa(self.options.out_gfa)
         elif self.options.action == 'add_annot':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
+                self._load_rgfa(gfa)
             for entry in self.options.in_gff:
-                temp = entry.split(',')
-                gff, backbone = temp[0], temp[1]
+                gff, backbone = entry.split(',')[0:2]
                 self._add_annot(gff, backbone)
-            self._save_gfa(self.options.out_gfa)
+            self._save_rgfa(self.options.out_gfa)
         elif self.options.action == 'get_sv':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
+                self._load_rgfa(gfa)
+            if self.options.region_bed:
+                self._load_region_bed(self.options.region_bed)
             for entry in self.options.out_vcf:
-                temp = entry.split(',')
-                vcf, backbone = temp[0], temp[1]
-                self._save_vcf(bb=backbone, vcf=vcf, overlap_gene_only=self.options.overlap_gene_only)
+                vcf, backbone = entry.split(',')[0:2]
+                self._save_vcf(bb=backbone, vcf=vcf, target_region=self.target_region)
         elif self.options.action == 'get_annot':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
+                self._load_rgfa(gfa)
             for entry in self.options.out_bed:
-                temp = entry.split(',')
-                bed, backbone = temp[0], temp[1]
+                bed, backbone = entry.split(',')[0:2]
                 self._save_bed(bb=backbone, bed=bed)
         elif self.options.action == 'remove_annot':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
+                self._load_rgfa(gfa)
             for backbone in self.options.backbone:
                 self._remove_annot(backbone=backbone)
-            self._save_gfa(self.options.out_gfa)
+            self._save_rgfa(self.options.out_gfa)
         elif self.options.action == 'remove_backbone':
             for gfa in self.options.in_gfa:
-                self._load_gfa(gfa)
+                self._load_rgfa(gfa)
             for backbone in self.options.backbone:
                 self._remove_backbone(backbone=backbone)
-            self._save_gfa(self.options.out_gfa)
+            self._save_rgfa(self.options.out_gfa)
 
-def check_param(args):
-    error = None
-    """
-    if self.options.action == 'merge_gfa':
-        if not self.options.in_gfa:
-            return False
-    elif self.options.action == 'add_annot':
-        return False
-    elif self.options.action == 'get_sv':
-        return False
-    elif self.options.action == 'get_annot':
-        return False
-    elif self.options.action == 'remove_annot':
-        return False
-    elif self.options.action == 'remove_backbone':
-        return False
-    """
-
-    return error
+def validate_pattern(value, pattern_regex, hint):
+    if not re.fullmatch(pattern_regex, value):
+        raise argparse.ArgumentTypeError(f"'{value}' does not match the required pattern: {hint}")
+    return value
 
 if __name__=="__main__":
     parser = ArgumentParser(description='Convert a vcf file to an rGFA file')
     parser.add_argument('--version', action='version', version='1.0')
-    parser.add_argument('-outdir', dest='outdir', help='the output directory', type=str)
+    parser.add_argument('-outdir', dest='outdir', required=True, help='the output directory', type=str)
 
     action_choices=['merge_gfa','add_annot','get_sv','get_annot','remove_sv','remove_annot','remove_backbone']
-    parser.add_argument('-action', dest='action', help='Action to be done on GFA. Correponding options needed', choices=action_choices, type=str, default='add_vcf')
-    parser.add_argument('-in_gfa', dest='in_gfa', nargs='+', help='input GFA', type=str)
-    parser.add_argument('-in_gff', dest='in_gff', nargs='*', help='add GFF of specified backbone [-in_gff gff1,backbone1 gff2,backbone2 ...]', type=str)
-    parser.add_argument('-out_gfa', dest='out_gfa', help='output GFA', type=str)
-    parser.add_argument('-out_vcf', dest='out_vcf', nargs='*', help='output VCF of specified backbone [-out_vcf vcf1,backbone1 vcf2,backbone2]', type=str)
-    parser.add_argument('-out_bed', dest='out_bed', nargs='*', help='output BED of specified backbone [-out_bed bed1,backbone1 bed2,backbone2]', type=str)
-
-    parser.add_argument('-backbone', dest='backbone', nargs='+', help='the name of the backbone sample', type=str)
-    parser.add_argument('-overlap_gene_only', dest='overlap_gene_only', help='output SV that overlap with genes only [1]', type=int, default=1)
+    parser.add_argument('-action', dest='action', required=True, help='Action to be done on GFA', choices=action_choices, type=str)
+    parser.add_argument('-in_gfa', dest='in_gfa', required=True, nargs='+', help='input GFA', type=str)
+    parser.add_argument('-in_gff', dest='in_gff', required='add_annot' in sys.argv, nargs='*',
+        help='add GFF of specified backbone [-in_gff gff1,backbone1 gff2,backbone2 ...]',
+        type=partial(validate_pattern, pattern_regex=r'^.*,.*$', hint='gff,backbone'))
+    parser.add_argument('-out_gfa', dest='out_gfa', required='action' in sys.argv and 'get_sv' not in sys.argv and 'get_annot' not in sys.argv,
+        help='output GFA', type=str)
+    parser.add_argument('-out_vcf', dest='out_vcf', required='get_sv' in sys.argv, nargs='*',
+        help='output VCF of specified backbone [-out_vcf vcf1,backbone1 vcf2,backbone2 ...]',
+        type=partial(validate_pattern, pattern_regex=r'^.*,.*$', hint='vcf,backbone'))
+    parser.add_argument('-region_bed', dest='region_bed', help='bed of regions of SV')
+    parser.add_argument('-out_bed', dest='out_bed', required='get_annot' in sys.argv, nargs='*',
+        help='output BED of specified backbone [-out_bed bed1,backbone1 bed2,backbone2 ...]',
+        type=partial(validate_pattern, pattern_regex=r'^.*,.*$', hint='bed,backbone'))
+    parser.add_argument('-backbone', dest='backbone', required=[i for i in sys.argv if 'remove' in i],
+        nargs='+', help='the name of the backbone sample', type=str)
+    parser.add_argument('-overlap_gene', dest='overlap_gene', help='output gene-overlapping SV only [1]', type=int, default=1)
 
     args = parser.parse_args()
-    error = check_param(args)
-    if None not in [args.outdir] and not error:
-        if args.action == 'test':
-            ManageRGFA(args).test()
-        else:
-            ManageRGFA(args).run()
-    else:
-        print('\n%s\n' % parser.print_help())
-        if error:
-            print(error)
+    ManageRGFA(args).run()

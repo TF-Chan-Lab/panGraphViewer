@@ -1,0 +1,20 @@
+name: pangraphviewer_app
+channels:
+  - conda-forge
+  - bioconda
+  - msys2
+dependencies:
+  - pyqt
+  - pyqtwebengine
+  - configparser
+  - pandas
+  - natsort
+  - networkx
+  - bokeh==2.2.3
+  - dna_features_viewer
+  - jinja2==3.0
+  - dataclasses==0.8
+  - pip
+  - sel(linux): pysam
+  - sel(win): m2-base
+  - sel(win): pyfaidx

@@ -401,7 +401,7 @@ class PanGraph:
         return results
 
     # load nodes and edges
-    def loadRGFA(self, targetChr=None, targetStart=None, targetEnd=None, sampleList=None, nodeIdList=None):
+    def loadRGFA(self, targetBb, targetChr=None, targetStart=None, targetEnd=None, sampleList=None, nodeIdList=None):
         G = nx.DiGraph()
         self.nodes = {}
         edges = []
@@ -461,15 +461,19 @@ class PanGraph:
 
                         lenBefore = int(tags['SO']) if 'SO' in tags else 0
 
-                        if rank != '0' and sampleList and sample not in sampleList:
+                        # check backbone and sample name
+                        if (rank == '0' and sample != targetBb) or \
+                           (rank != '0' and sampleList and sample not in sampleList):
+                            continue
+
+                        # check chr and pos
+                        if (targetChr and contig != targetChr) or \
+                           (targetStart and targetStart > lenBefore+seqLen) or \
+                           (targetEnd and targetEnd < lenBefore+1):
                             continue
 
                         # update backbone info
                         if rank == '0':
-                            if (targetChr and contig != targetChr) or \
-                               (targetStart and targetStart > lenBefore+seqLen) or \
-                               (targetEnd and targetEnd < lenBefore+1): continue
-
                             backbone['contigs'][contig] = 1
                             backbone['name'] = sample
 
@@ -636,13 +640,13 @@ class PanGraph:
 
         self.lenBeforeDict = lenBeforeDict
 
-    def drawGraph(self, sampleList, targetChr, targetStart, targetEnd, isGenHtml=True, nodeIdDict=None):
+    def drawGraph(self, backbone, sampleList, targetChr, targetStart, targetEnd, isGenHtml=True, nodeIdDict=None):
         self.error_unknown = 0
         self.drawgraph_by_nodeids = False
 
         try:
             logging.info("Loading rGFA ...")
-            self.loadRGFA(targetChr=targetChr, targetStart=targetStart, targetEnd=targetEnd, sampleList=sampleList, nodeIdList=nodeIdDict)
+            self.loadRGFA(targetBb=backbone, targetChr=targetChr, targetStart=targetStart, targetEnd=targetEnd, sampleList=sampleList, nodeIdList=nodeIdDict)
 
             logging.info("Updating nodes ...")
             self.updateNodes()
@@ -732,14 +736,14 @@ class PanGraph:
             #raise e
             return None
 
-    def drawGraphCmdline(self, sampleList, targetChr, targetStart, targetEnd, isGenHtml=True, nodeIdFile=None):
+    def drawGraphCmdline(self, backbone, sampleList, targetChr, targetStart, targetEnd, isGenHtml=True, nodeIdFile=None):
         self.error_unknown = 0
         self.drawgraph_by_nodeids = False
 
         try:
             script = os.path.realpath(__file__)
 
-            cmd = f'"{sys.executable}" "{script}" -g "{self.gfa}" -o "{self.outdir}" -c "{targetChr}" -a drawGraph'
+            cmd = f'"{sys.executable}" "{script}" -b "{backbone}" -g "{self.gfa}" -o "{self.outdir}" -c "{targetChr}" -a drawGraph'
             if targetStart:
                 cmd = f'{cmd} -s "{targetStart}"'
             if targetEnd:
@@ -840,7 +844,7 @@ class PanGraph:
 
         logging.info(f"Complete {format.upper()} file parsing ...")
 
-    def overlapGenes(self, geneId):
+    def overlapGenes(self, targetBb, geneId):
         if geneId not in self.bed:
             logging.info(f'GeneID {geneId} not found. Action abort')
             return
@@ -848,7 +852,7 @@ class PanGraph:
         geneInfo = self.bed[geneId]
 
         geneChr, geneStart, geneEnd, geneOri = geneInfo['Chr'], geneInfo['Start'], geneInfo['End'], geneInfo['Orientation']
-        self.loadRGFA(geneChr, geneStart, geneEnd)
+        self.loadRGFA(targetBb, geneChr, geneStart, geneEnd)
         self.updateNodes()
 
         posDict = {}
@@ -1087,7 +1091,6 @@ class PanGraph:
         seqDesc = f"{node[NODE.seqDesc]}..." if node[NODE.len] > len(node[NODE.seqDesc]) and node[NODE.seqDesc] != '*' else node[NODE.seqDesc]
 
         title = f"NodeId: {nodeId}; Resource: {node[NODE.sample]}_{node[NODE.chr]}; Len: {node[NODE.len]}"
-        #print('check 1', 'chr', node[NODE.chr])
         if sample == self.backbone['name']: title += f"; Pos: {pos} - {pos + node[NODE.len] - 1}"
         if inf: title += f"; Info: {inf}"
         if showSeqDesc: title += f"; Seq: {seqDesc}"
@@ -1280,10 +1283,6 @@ class PanGraph:
         else:
             return outFile['cytoscape']
 
-    def run(self, targetChr, targetStart, targetEnd, sampleList=None):
-        logging.info('loading GFA ...')
-        self.loadRGFA(targetChr=targetChr, targetStart=targetStart, targetEnd=targetEnd, sampleList=sampleList)
-
     def binSearch(self, a, x):
         i = bisect_left(a, x)
         if i :
@@ -1339,6 +1338,7 @@ if __name__=="__main__":
     parser.add_argument('-e', dest='end', help='end pos', type=int)
     parser.add_argument('-l', dest='samplelist', nargs='*', help='sample list', type=str)
     parser.add_argument('-n', dest='nodeidlist', nargs='*', help='nodeID list', type=str)
+    parser.add_argument('-b', dest='backbone', help='backbone', type=str)
 
     parser.add_argument('-a', dest='action', help='action [parseRGFA, drawGraph]', type = str)
 
@@ -1348,11 +1348,11 @@ if __name__=="__main__":
         if args.action == 'drawGraph':
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=False)
             #panGraph = PanGraph(args.gfa, args.outdir)
-            drawGraphResult = panGraph.drawGraph(args.samplelist, args.chr, args.start, args.end)
+            drawGraphResult = panGraph.drawGraph(args.backbone, args.samplelist, args.chr, args.start, args.end)
             print(DrawGraphResult.toJson(panGraph, drawGraphResult))
         elif args.action == 'drawGraphCmdline': # for debug only
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=False)
-            panGraph.drawGraphCmdline(args.samplelist, args.chr, args.start, args.end)
+            panGraph.drawGraphCmdline(args.backbone, args.samplelist, args.chr, args.start, args.end)
             print(panGraph.drawGraphResult['outHtml'])
             print(panGraph.subNodesCount)
         elif args.action == 'test':
@@ -1364,6 +1364,6 @@ if __name__=="__main__":
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=True)
         else:
             panGraph = PanGraph(args.gfa, args.outdir, parseRGFA=False)
-            panGraph.drawGraph(args.samplelist, args.chr, args.start, args.end)
+            panGraph.drawGraph(args.backbone, args.samplelist, args.chr, args.start, args.end)
     else:
         print('\n%s\n' % parser.print_help())

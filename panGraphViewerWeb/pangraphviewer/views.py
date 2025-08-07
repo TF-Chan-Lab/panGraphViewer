@@ -106,10 +106,10 @@ def getdata(request):
     if node_ids:
         nodeIdDict = {id.strip():1 for id in node_ids.split()}
         graph = PanGraph(gfa, outdir=get_work_dir(request), nodeIdDict=nodeIdDict)
-        drawGraphResult = graph.drawGraphByNodeId(sampleList, targetChr=chr, nodeIdDict=nodeIdDict, isGenHtml=False)
+        drawGraphResult = graph.drawGraphByNodeId(backbone, sampleList, targetChr=chr, nodeIdDict=nodeIdDict, isGenHtml=False)
     else:
         graph = PanGraph(gfa, outdir=get_work_dir(request), parseRGFA=False)
-        drawGraphResult = graph.drawGraph(sampleList, chr, start, end, isGenHtml=False)
+        drawGraphResult = graph.drawGraph(backbone, sampleList, chr, start, end, isGenHtml=False)
 
     nodeCount = len(drawGraphResult['nodes_data'])
     if nodeCount > graph.maxNodesLimit:

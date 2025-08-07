@@ -1534,7 +1534,7 @@ class Main(QMainWindow):
                     self.ui.plotStatusLabel.setText('Plotting ...')
                     self.date_plot1 = datetime.datetime.today()
                     self.leftSamples = [i for i in self.leftSamples if i != ''] + ['Samples']
-                    self.workerShowGraph = Worker(self.run.drawGraphCmdline, self.leftSamples, self.chr, self.start, self.end)
+                    self.workerShowGraph = Worker(self.run.drawGraphCmdline, self.run.backbone['name'], self.leftSamples, self.chr, self.start, self.end)
                     self.threadpool.start(self.workerShowGraph)
                     self.workerShowGraph.signals.finished.connect(self.completePlot)
                     self.workerShowGraph.signals.progress.connect(self.showProgress)
@@ -1970,7 +1970,7 @@ class Main(QMainWindow):
             chr = self.run.bed[self.gene]['Chr']
             start = self.run.bed[self.gene]['Start']
             end = self.run.bed[self.gene]['End']
-            self.run.drawGraphCmdline(self.leftSamples, chr, start, end)
+            self.run.drawGraphCmdline(self.ui.sampleComboBox.currentText(), self.leftSamples, chr, start, end)
         except KeyError:
             self.bedError = 1
 

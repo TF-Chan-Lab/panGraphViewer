@@ -2,8 +2,11 @@ PyQt5==5.12.3
 PyQtWebEngine==5.12.1
 configparser
 pandas
-bokeh==2.2.3
-dna_features_viewer
 natsort
 networkx
+bokeh==2.2.3
+dna_features_viewer
+jinja2==3.0
+dataclasses==0.8
 pyfaidx
+m2-base
